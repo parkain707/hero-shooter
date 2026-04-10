@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>희망누리 6학년 3반 - 히어로 슈터</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; overflow:hidden; font-family:'맑은 고딕',Arial,sans-serif; color:#fff; user-select:none; }
+#c { display:block; width:100vw; height:100vh; }
+
+/* ── HERO SELECT ── */
+#heroSelect {
+  position:fixed; inset:0; background:linear-gradient(135deg,#0a0a1a 0%,#1a0a2e 50%,#0a1a2e 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100;
+  overflow-y:auto; padding:20px 0;
+}
+#heroSelect h1 { font-size:2.4rem; color:#00d4ff; text-shadow:0 0 20px #00d4ff; margin-bottom:6px; letter-spacing:4px; }
+#heroSelect .subtitle { color:#aaa; margin-bottom:16px; font-size:.9rem; }
+#nicknameArea { display:flex; gap:8px; margin-bottom:16px; align-items:center; }
+#nicknameArea label { color:#ccc; font-size:.9rem; }
+#nicknameInput { background:#ffffff22; border:1px solid #00d4ff88; color:#fff; padding:6px 14px; border-radius:6px; font-size:1rem; outline:none; width:180px; }
+#heroCards { display:flex; gap:14px; margin-bottom:18px; flex-wrap:wrap; justify-content:center; max-width:900px; }
+.heroCard {
+  width:150px; background:#ffffff0d; border:2px solid #ffffff22; border-radius:12px;
+  padding:12px 10px; cursor:pointer; transition:all .2s; text-align:center; position:relative;
+}
+.heroCard:hover { border-color:#00d4ff; background:#00d4ff15; transform:translateY(-4px); box-shadow:0 8px 24px #00d4ff44; }
+.heroCard.selected { border-color:#ffcc00; background:#ffcc0015; box-shadow:0 0 20px #ffcc0066; }
+.heroPortrait { width:72px; height:72px; border-radius:50%; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
+.heroName { font-size:.95rem; font-weight:700; margin-bottom:2px; }
+.heroRole { font-size:.7rem; color:#aaa; margin-bottom:7px; }
+.heroStats { font-size:.68rem; color:#ccc; text-align:left; }
+.statBar { height:5px; background:#ffffff22; border-radius:3px; margin:3px 0; overflow:hidden; }
+.statFill { height:100%; border-radius:3px; }
+.heroAbilityPreview { font-size:.62rem; color:#88aaff; margin-top:6px; text-align:left; line-height:1.4; }
+#keysHint { font-size:.75rem; color:#667788; margin-bottom:12px; text-align:center; line-height:1.6; }
+#startBtn {
+  padding:14px 60px; font-size:1.2rem; background:linear-gradient(90deg,#00d4ff,#0077ff);
+  border:none; border-radius:30px; color:#fff; cursor:pointer; font-weight:700; letter-spacing:2px;
+  box-shadow:0 4px 20px #00d4ff88; transition:all .2s;
+}
+#startBtn:hover { transform:scale(1.05); box-shadow:0 6px 30px #00d4ffaa; }
+#timeDisplay { color:#ffcc00; font-size:.9rem; margin-bottom:10px; }
+
+/* ── HUD ── */
+#hud { position:fixed; inset:0; pointer-events:none; z-index:10; display:none; }
+#crosshairSvg { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; transition:width .05s,height .05s; }
+#ammo { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); font-size:1.4rem; font-weight:700; text-shadow:0 2px 6px #000; letter-spacing:2px; }
+#hpArea { position:fixed; bottom:18px; left:20px; display:flex; flex-direction:column; gap:3px; }
+#hpLabel { font-size:.78rem; color:#ccc; }
+#hpBarOuter { width:200px; height:13px; background:#ffffff22; border-radius:7px; overflow:hidden; border:1px solid #ffffff33; }
+#hpBarInner { height:100%; border-radius:7px; transition:width .1s; background:linear-gradient(90deg,#ff4444,#ff8844); }
+#hpNum { font-size:.82rem; color:#fff; }
+#shieldBarOuter { width:200px; height:7px; background:#ffffff22; border-radius:4px; overflow:hidden; border:1px solid #4499ff33; }
+#shieldBarInner { height:100%; border-radius:4px; background:linear-gradient(90deg,#4499ff,#88ccff); transition:width .1s; }
+#skillsArea { position:fixed; bottom:18px; right:20px; display:flex; gap:9px; align-items:flex-end; }
+.skillIcon {
+  width:52px; height:52px; border-radius:10px; background:#ffffff15; border:2px solid #ffffff33;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden;
+}
+.skillKey { font-size:.62rem; color:#ffcc00; font-weight:700; }
+.skillName { font-size:.52rem; color:#ccc; text-align:center; line-height:1.1; margin-top:1px; }
+.skillCooldown {
+  position:absolute; inset:0; background:#000000bb;
+  display:flex; align-items:center; justify-content:center; font-size:.82rem; font-weight:700; color:#fff;
+}
+.skillCooldown.hidden { display:none; }
+#ultArea { position:fixed; bottom:88px; right:20px; display:flex; align-items:center; gap:7px; }
+#ultBar { width:115px; height:11px; background:#ffffff22; border-radius:6px; overflow:hidden; border:1px solid #ffcc0055; }
+#ultFill { height:100%; border-radius:6px; background:linear-gradient(90deg,#ffaa00,#ffdd00); transition:width .1s; }
+#ultLabel { font-size:.72rem; color:#ffcc00; max-width:80px; }
+#waveInfo { position:fixed; top:14px; left:14px; font-size:.95rem; color:#fff; text-shadow:0 2px 6px #000; line-height:1.7; }
+#killFeedWrap { position:fixed; top:14px; right:150px; display:flex; flex-direction:column; gap:3px; align-items:flex-end; max-width:260px; }
+.killEntry { background:#00000088; padding:3px 10px; border-radius:4px; font-size:.75rem; border-left:3px solid #ff4444; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#minimap { position:fixed; top:14px; right:14px; width:130px; height:130px; }
+#minimap canvas { border-radius:50%; border:2px solid #ffffff44; display:block; }
+#dmgOverlay { position:fixed; inset:0; pointer-events:none; border:8px solid transparent; transition:border-color .08s; }
+#skillMsg { position:fixed; top:54%; left:50%; transform:translateX(-50%); font-size:.95rem; color:#ffdd44; text-shadow:0 2px 8px #000; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+#ghostIndicator { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); font-size:.8rem; color:#aaddff; opacity:0; transition:opacity .2s; }
+#reloadBar { position:fixed; bottom:60px; left:50%; transform:translateX(-50%); width:120px; height:6px; background:#ffffff22; border-radius:3px; overflow:hidden; display:none; }
+#reloadFill { height:100%; background:#44aaff; border-radius:3px; }
+
+/* ── PAUSE / RESULT ── */
+#pauseOverlay, #resultOverlay {
+  position:fixed; inset:0; background:#00000099; display:none; flex-direction:column;
+  align-items:center; justify-content:center; z-index:50; backdrop-filter:blur(4px);
+}
+#pauseOverlay { gap:16px; }
+#pauseOverlay h2 { font-size:2.5rem; color:#fff; letter-spacing:6px; }
+#pauseOverlay p { color:#aaa; }
+#resultOverlay { gap:20px; }
+#resultTitle { font-size:3.2rem; font-weight:900; letter-spacing:6px; }
+#resultTitle.win { color:#00ff88; text-shadow:0 0 30px #00ff88; }
+#resultTitle.lose { color:#ff4444; text-shadow:0 0 30px #ff4444; }
+#resultStats { font-size:1rem; color:#ccc; text-align:center; line-height:2; }
+.overlayBtn {
+  padding:12px 44px; font-size:.95rem; background:linear-gradient(90deg,#00d4ff,#0077ff);
+  border:none; border-radius:24px; color:#fff; cursor:pointer; font-weight:700;
+  transition:all .2s; margin:4px; pointer-events:all;
+}
+.overlayBtn:hover { transform:scale(1.05); }
+#timeUpOverlay {
+  position:fixed; inset:0; background:#000000ee; display:none; flex-direction:column;
+  align-items:center; justify-content:center; z-index:200; gap:16px;
+}
+#timeUpOverlay h2 { font-size:2.2rem; color:#ff4444; }
+#timeUpOverlay p { color:#ccc; }
+#clickPrompt {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:#00000099; padding:20px 40px; border-radius:12px; font-size:1.1rem;
+  color:#fff; pointer-events:none; z-index:20; display:none; text-align:center; border:1px solid #ffffff33;
+}
+#heroNameTag { position:fixed; top:14px; left:50%; transform:translateX(-50%); font-size:.8rem; color:#aaccff; opacity:.7; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- HERO SELECT -->
+<div id="heroSelect">
+  <h1>히어로 슈터</h1>
+  <div class="subtitle">희망누리 6학년 3반</div>
+  <div id="timeDisplay"></div>
+  <div id="nicknameArea">
+    <label>닉네임:</label>
+    <input id="nicknameInput" type="text" placeholder="이름을 입력하세요" maxlength="12">
+  </div>
+  <div id="heroCards"></div>
+  <div id="keysHint">
+    WASD 이동 &nbsp;|&nbsp; 마우스 조준/사격 &nbsp;|&nbsp; Q/E/Shift 스킬 &nbsp;|&nbsp; F 궁극기 &nbsp;|&nbsp; R 재장전 &nbsp;|&nbsp; ESC 일시정지
+  </div>
+  <button id="startBtn">게임 시작</button>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <svg id="crosshairSvg" width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+    <line x1="11" y1="2" x2="11" y2="7.5" stroke="white" stroke-width="1.5" opacity=".9"/>
+    <line x1="11" y1="14.5" x2="11" y2="20" stroke="white" stroke-width="1.5" opacity=".9"/>
+    <line x1="2" y1="11" x2="7.5" y2="11" stroke="white" stroke-width="1.5" opacity=".9"/>
+    <line x1="14.5" y1="11" x2="20" y2="11" stroke="white" stroke-width="1.5" opacity=".9"/>
+    <circle cx="11" cy="11" r="1.2" fill="white" opacity=".8"/>
+  </svg>
+  <div id="heroNameTag"></div>
+  <div id="waveInfo">
+    <div id="waveText">웨이브 1/6</div>
+    <div id="scoreText">점수: 0</div>
+    <div id="killText">처치: 0</div>
+  </div>
+  <div id="killFeedWrap"></div>
+  <div id="minimap"><canvas id="mmCanvas" width="130" height="130"></canvas></div>
+  <div id="hpArea">
+    <div id="hpLabel">체력</div>
+    <div id="hpBarOuter"><div id="hpBarInner" style="width:100%"></div></div>
+    <div id="shieldBarOuter"><div id="shieldBarInner" style="width:0%"></div></div>
+    <div id="hpNum">200 / 200</div>
+  </div>
+  <div id="ammo">30 / 30</div>
+  <div id="reloadBar"><div id="reloadFill" style="width:0%"></div></div>
+  <div id="ultArea">
+    <div id="ultLabel">궁극기</div>
+    <div id="ultBar"><div id="ultFill" style="width:0%"></div></div>
+  </div>
+  <div id="skillsArea"></div>
+  <div id="dmgOverlay"></div>
+  <div id="skillMsg"></div>
+  <div id="ghostIndicator">망령화 활성중</div>
+</div>
+
+<!-- Pause -->
+<div id="pauseOverlay">
+  <h2>일시정지</h2>
+  <p>화면 클릭하여 재개</p>
+</div>
+
+<!-- Result -->
+<div id="resultOverlay">
+  <div id="resultTitle"></div>
+  <div id="resultStats"></div>
+  <button class="overlayBtn" onclick="location.reload()">다시하기</button>
+</div>
+
+<!-- Time Up -->
+<div id="timeUpOverlay">
+  <h2>오늘 플레이 시간이 끝났어요!</h2>
+  <p>내일 다시 만나요 :)</p>
+  <button class="overlayBtn" onclick="location.reload()">확인</button>
+</div>
+
+<div id="clickPrompt">클릭하여 게임 시작/재개</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+// ══════════════════════════════════════════════
+// TIMEGUARD
+// ══════════════════════════════════════════════
+const TimeGuard = {
+  LIMIT: 1800,
+  KEY_NICK:'hn_nickname', KEY_TIME:'hn_playtime', KEY_DATE:'hn_date',
+  _start:0, _tickInterval:null,
+  _today(){ return new Date().toISOString().slice(0,10); },
+  getPlayed(){
+    if(localStorage.getItem(this.KEY_DATE)!==this._today()){
+      localStorage.setItem(this.KEY_DATE,this._today());
+      localStorage.setItem(this.KEY_TIME,'0');
+    }
+    return parseInt(localStorage.getItem(this.KEY_TIME)||'0');
+  },
+  getRemaining(){ return Math.max(0,this.LIMIT-this.getPlayed()); },
+  isOver(){ return this.getPlayed()>=this.LIMIT; },
+  startSession(){
+    this._start=Date.now();
+    this._tickInterval=setInterval(()=>{
+      const elapsed=Math.floor((Date.now()-this._start)/1000);
+      const total=parseInt(localStorage.getItem(this.KEY_TIME)||'0')+elapsed;
+      localStorage.setItem(this.KEY_TIME,String(total));
+      this._start=Date.now();
+      if(this.isOver()) this._triggerTimeUp();
+    },10000);
+  },
+  stopSession(){
+    if(this._tickInterval){clearInterval(this._tickInterval);this._tickInterval=null;}
+    const elapsed=Math.floor((Date.now()-this._start)/1000);
+    const total=parseInt(localStorage.getItem(this.KEY_TIME)||'0')+elapsed;
+    localStorage.setItem(this.KEY_TIME,String(Math.min(total,this.LIMIT)));
+  },
+  _triggerTimeUp(){
+    this.stopSession();
+    document.getElementById('timeUpOverlay').style.display='flex';
+    window.gameRunning=false;
+  },
+  initUI(){
+    const saved=localStorage.getItem(this.KEY_NICK)||'';
+    if(saved) document.getElementById('nicknameInput').value=saved;
+    const rem=this.getRemaining();
+    const m=Math.floor(rem/60),s=rem%60;
+    document.getElementById('timeDisplay').textContent=`오늘 남은 시간: ${m}분 ${s}초`;
+    if(this.isOver()) this._triggerTimeUp();
+  }
+};
+
+// ══════════════════════════════════════════════
+// HERO DEFINITIONS
+// ══════════════════════════════════════════════
+const HEROES=[
+  {
+    id:'soldier',name:'솔저-76',role:'공격',roleColor:'#ff6655',
+    color:0x3366ff,health:200,speed:5.5,fireRate:120,damage:20,
+    weapon:'rifle',clipSize:30,icon:'⚔',
+    skills:[
+      {key:'Q',name:'전술 질풍',cooldown:8,desc:'전방 8m 돌진'},
+      {key:'E',name:'수류탄',cooldown:10,desc:'폭발 범위 데미지'},
+      {key:'Shift',name:'생체장',cooldown:15,desc:'체력 100 회복'}
+    ],
+    ultimate:{name:'집중포화',desc:'5초 자동 조준 사격',charge:100}
+  },
+  {
+    id:'tank',name:'라인하르트',role:'탱커',roleColor:'#aaaacc',
+    color:0x888899,health:500,speed:4.0,fireRate:500,damage:70,
+    weapon:'hammer',clipSize:1,icon:'🛡',
+    skills:[
+      {key:'Q',name:'화염 강타',cooldown:6,desc:'전방 불꽃 폭발'},
+      {key:'E',name:'대격변',cooldown:12,desc:'주변 넉백+데미지'},
+      {key:'Shift',name:'방어막',cooldown:10,desc:'500 실드 10초'}
+    ],
+    ultimate:{name:'대지분쇄',desc:'전방 광역 스턴+데미지',charge:100}
+  },
+  {
+    id:'mercy',name:'메르시',role:'지원',roleColor:'#44ff88',
+    color:0xffdd44,health:200,speed:5.5,fireRate:300,damage:25,
+    weapon:'pistol',clipSize:20,icon:'💊',
+    skills:[
+      {key:'Q',name:'치유 광선',cooldown:3,desc:'체력 80 즉시 회복'},
+      {key:'E',name:'부활',cooldown:30,desc:'체력 완전 회복'},
+      {key:'Shift',name:'수호천사',cooldown:5,desc:'전방 빠른 이동'}
+    ],
+    ultimate:{name:'발키리',desc:'10초 강화(속도+공격력)',charge:100}
+  },
+  {
+    id:'genji',name:'겐지',role:'공격',roleColor:'#ff6655',
+    color:0x00cc66,health:200,speed:7.0,fireRate:200,damage:28,
+    weapon:'shuriken',clipSize:24,icon:'🌿',
+    skills:[
+      {key:'Q',name:'수리검',cooldown:4,desc:'3발 수리검 동시 발사'},
+      {key:'E',name:'편향',cooldown:8,desc:'2초간 투사체 반사'},
+      {key:'Shift',name:'질풍참',cooldown:6,desc:'전방 돌진+데미지'}
+    ],
+    ultimate:{name:'용검',desc:'8초간 근접 강화',charge:100}
+  },
+  {
+    id:'reaper',name:'리퍼',role:'공격',roleColor:'#ff6655',
+    color:0x880022,health:250,speed:4.5,fireRate:350,damage:50,
+    weapon:'shotgun',clipSize:8,icon:'💀',
+    skills:[
+      {key:'Q',name:'텔레포트',cooldown:8,desc:'조준 방향으로 순간이동'},
+      {key:'E',name:'망령화',cooldown:12,desc:'3초 무적+회복'},
+      {key:'Shift',name:'영혼 수확',cooldown:0,desc:'처치 시 체력 회복(패시브)'}
+    ],
+    ultimate:{name:'죽음의 꽃',desc:'전방향 산탄 난사',charge:100}
+  }
+];
+
+const ENEMY_TYPES=[
+  {name:'스카우트',color:0xff4444,hp:150,speed:4.5,dmg:15,fireRate:800,range:25,score:100},
+  {name:'솔저',color:0xff8800,hp:250,speed:3.0,dmg:20,fireRate:1200,range:35,score:150},
+  {name:'헤비',color:0xaa2222,hp:500,speed:1.8,dmg:35,fireRate:200,range:20,score:300},
+  {name:'스나이퍼',color:0x8800ff,hp:150,speed:2.0,dmg:80,fireRate:3000,range:60,score:250},
+  {name:'메딕',color:0x00cc55,hp:180,speed:3.0,dmg:12,fireRate:1000,range:20,healer:true,score:200}
+];
+
+// ══════════════════════════════════════════════
+// HERO SELECT UI
+// ══════════════════════════════════════════════
+let selectedHeroId='soldier';
+const heroCardsEl=document.getElementById('heroCards');
+HEROES.forEach(h=>{
+  const card=document.createElement('div');
+  card.className='heroCard'+(h.id===selectedHeroId?' selected':'');
+  card.dataset.id=h.id;
+  const hex='#'+h.color.toString(16).padStart(6,'0');
+  const hpP=Math.round(h.health/5);
+  const sP=Math.round((h.speed/7)*100);
+  const dP=Math.round((h.damage/70)*100);
+  card.innerHTML=`
+    <div class="heroPortrait" style="background:${hex}22;border:2px solid ${hex}">${h.icon}</div>
+    <div class="heroName" style="color:${hex}">${h.name}</div>
+    <div class="heroRole" style="color:${h.roleColor}">${h.role}</div>
+    <div class="heroStats">
+      체력 <div class="statBar"><div class="statFill" style="width:${hpP}%;background:${hex}"></div></div>
+      속도 <div class="statBar"><div class="statFill" style="width:${sP}%;background:#44aaff"></div></div>
+      공격 <div class="statBar"><div class="statFill" style="width:${dP}%;background:#ff7744"></div></div>
+    </div>
+    <div class="heroAbilityPreview">${h.skills.map(s=>`[${s.key}] ${s.name}`).join('<br>')}<br>[F] ${h.ultimate.name}</div>`;
+  card.addEventListener('click',()=>{
+    selectedHeroId=h.id;
+    document.querySelectorAll('.heroCard').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+  });
+  heroCardsEl.appendChild(card);
+});
+TimeGuard.initUI();
+document.getElementById('startBtn').addEventListener('click',()=>{
+  const nick=document.getElementById('nicknameInput').value.trim()||'플레이어';
+  localStorage.setItem(TimeGuard.KEY_NICK,nick);
+  if(TimeGuard.isOver()){TimeGuard._triggerTimeUp();return;}
+  document.getElementById('heroSelect').style.display='none';
+  document.getElementById('hud').style.display='block';
+  initGame(selectedHeroId);
+  TimeGuard.startSession();
+});
+
+// ══════════════════════════════════════════════
+// GLOBALS
+// ══════════════════════════════════════════════
+let scene,camera,renderer,clock;
+let currentHero=null;
+let player={};
+let enemies=[],bullets=[],particles=[],decals=[],impactLights=[],killFeedItems=[];
+let gameState='playing';
+let waveNum=1; const MAX_WAVES=6;
+let score=0,totalKills=0,totalShots=0,totalHits=0;
+let screenShake=0;
+let pointerLocked=false;
+let keys={};
+let mouseDX=0,mouseDY=0,mouseHeld=false;
+let skillCooldowns={};
+let ultCharge=0,ultActive=false,ultTimer=0;
+let shieldHP=0,shieldTimer=0,maxShield=500;
+let recoilY=0,bobTime=0;
+let waveTimer=0,waveActive=false;
+let currentClip=0,isReloading=false,reloadTimer=0,reloadDuration=1.5;
+let deflectActive=false,deflectTimer=0;
+let ghostActive=false,ghostTimer=0;
+let valkyrieActive=false,valkyrieTimer=0;
+let dragonbladeActive=false,dragonbladeTimer=0;
+let healRegen=false,healRegenTimer=0;
+let lastFireTime=0;
+let skillMsgTimer=0;
+let audioCtx=null;
+window.gameRunning=false;
+let weaponGroup=null;
+let audioInited=false;
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function initGame(heroId){
+  window.gameRunning=true;
+  currentHero=HEROES.find(h=>h.id===heroId);
+  document.getElementById('heroNameTag').textContent=
+    `${localStorage.getItem(TimeGuard.KEY_NICK)||'플레이어'} - ${currentHero.name}`;
+
+  const canvas=document.getElementById('c');
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.1;
+
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x87ceeb);
+  scene.fog=new THREE.Fog(0x87ceeb,60,200);
+  clock=new THREE.Clock();
+
+  camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,300);
+  camera.position.set(0,1.7,5);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff,0.55));
+  const sun=new THREE.DirectionalLight(0xfff8e0,1.2);
+  sun.position.set(30,60,20);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.near=0.5; sun.shadow.camera.far=200;
+  sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
+  sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
+  scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0x87ceeb,0x556655,0.45));
+  const fill=new THREE.DirectionalLight(0x88aaff,0.28);
+  fill.position.set(-20,10,-20); scene.add(fill);
+
+  buildMap();
+  buildWeaponModel();
+  initPlayer();
+  buildSkillsHUD();
+  spawnWave(1);
+  setupInput();
+  setupPointerLock();
+  window.addEventListener('resize',onResize);
+  document.getElementById('clickPrompt').style.display='block';
+  requestAnimationFrame(gameLoop);
+}
+
+// ══════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════
+function makeGridTex(sz,bg,line,rep){
+  const cv=document.createElement('canvas'); cv.width=cv.height=sz;
+  const cx=cv.getContext('2d');
+  cx.fillStyle='#'+bg.toString(16).padStart(6,'0'); cx.fillRect(0,0,sz,sz);
+  cx.strokeStyle='#'+line.toString(16).padStart(6,'0'); cx.lineWidth=1;
+  const step=sz/4;
+  for(let i=0;i<=4;i++){
+    cx.beginPath();cx.moveTo(i*step,0);cx.lineTo(i*step,sz);cx.stroke();
+    cx.beginPath();cx.moveTo(0,i*step);cx.lineTo(sz,i*step);cx.stroke();
+  }
+  const t=new THREE.CanvasTexture(cv);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rep,rep);
+  return t;
+}
+
+function buildBox(w,h,d,color,x,y,z,solid=true,cast=true){
+  const m=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshLambertMaterial({color})
+  );
+  m.position.set(x,y,z);
+  m.castShadow=cast; m.receiveShadow=true;
+  if(solid) m.userData.solid=true;
+  scene.add(m); return m;
+}
+
+function buildMap(){
+  // Floor
+  const floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(200,200),
+    new THREE.MeshLambertMaterial({map:makeGridTex(256,0x555566,0x666678,50)})
+  );
+  floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+
+  // Buildings
+  const buildings=[
+    [14,22,14,0x778899,-30,11,-30],
+    [12,18,10,0x667788, 30, 9,-30],
+    [10,25,12,0x889988,-30,12, 30],
+    [16,15,14,0x998877, 30, 7, 30],
+    [20,14, 8,0x7788aa,  0, 7,-45],
+    [18,18, 8,0x887799,  0, 9, 45],
+    [ 8,20,20,0x778888,-50,10,  0],
+    [ 8,16,16,0x887788, 50, 8,  0],
+  ];
+  buildings.forEach(([w,h,d,c,x,y,z])=>{
+    buildBox(w,h,d,c,x,y,z);
+    // Window decals on front face
+    const wMat=new THREE.MeshBasicMaterial({color:0xaaddff,transparent:true,opacity:0.55});
+    const rows=Math.floor(h/5), cols=Math.floor(w/4);
+    for(let r=0;r<rows;r++) for(let cc=0;cc<cols;cc++){
+      if(Math.random()<0.35) continue;
+      const win=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.3),wMat);
+      win.position.set(x-w/2+2+cc*4, y-h/2+3+r*5, z+d/2+0.05);
+      scene.add(win);
+    }
+  });
+
+  // Low cover walls
+  const covers=[
+    [ 8,1.2,0.8,0x888877, 12,0.6, 0],
+    [ 8,1.2,0.8,0x888877,-12,0.6, 0],
+    [0.8,1.2,8,0x888877,  0,0.6,14],
+    [0.8,1.2,8,0x888877,  0,0.6,-14],
+    [ 6,1.2,0.8,0x777766, 20,0.6, 20],
+    [ 6,1.2,0.8,0x777766,-20,0.6, 20],
+    [0.8,1.2,6,0x777766, 20,0.6,-20],
+    [0.8,1.2,6,0x777766,-20,0.6,-20],
+    [ 5,1.2,0.8,0x888866,  8,0.6,-8],
+    [ 5,1.2,0.8,0x888866, -8,0.6, 8],
+  ];
+  covers.forEach(([w,h,d,c,x,y,z])=>buildBox(w,h,d,c,x,y,z));
+
+  // Fountain
+  scene.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.8,0.5,16),new THREE.MeshLambertMaterial({color:0x9999aa})),{position:new THREE.Vector3(0,0.25,0)}));
+  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.38,2.2,8),new THREE.MeshLambertMaterial({color:0xaaaacc}));
+  pillar.position.set(0,1.6,0); pillar.userData.solid=true; pillar.castShadow=true; scene.add(pillar);
+
+  // Corner pillars
+  [[-9,9],[9,9],[-9,-9],[9,-9]].forEach(([x,z])=>{
+    const p=new THREE.Mesh(new THREE.CylinderGeometry(0.38,0.38,4.5,8),new THREE.MeshLambertMaterial({color:0x998888}));
+    p.position.set(x,2.25,z); p.castShadow=true; p.userData.solid=true; scene.add(p);
+  });
+
+  // Trees
+  [[16,16],[-16,16],[16,-16],[-16,-16],[22,0],[-22,0],[0,22],[0,-22]].forEach(([x,z])=>{
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.28,2,6),new THREE.MeshLambertMaterial({color:0x553311}));
+    t.position.set(x,1,z); scene.add(t);
+    const f=new THREE.Mesh(new THREE.SphereGeometry(1.6,8,6),new THREE.MeshLambertMaterial({color:0x228833+(Math.random()*0x111111|0)}));
+    f.position.set(x,3.5,z); scene.add(f);
+  });
+
+  // Boundary walls
+  const bwMat=new THREE.MeshLambertMaterial({color:0x665544});
+  [{x:0,z:-100,w:200,h:8,d:1.5},{x:0,z:100,w:200,h:8,d:1.5},{x:-100,z:0,w:1.5,h:8,d:200},{x:100,z:0,w:1.5,h:8,d:200}].forEach(b=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(b.w,b.h,b.d),bwMat);
+    m.position.set(b.x,b.h/2,b.z); m.receiveShadow=true; m.userData.solid=true; scene.add(m);
+  });
+
+  // Road stripes
+  const stripMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.3});
+  for(let i=-4;i<=4;i+=2){
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(0.25,8),stripMat);
+    s.rotation.x=-Math.PI/2; s.position.set(i*5,0.02,0); scene.add(s);
+  }
+}
+
+// ══════════════════════════════════════════════
+// WEAPON MODEL
+// ══════════════════════════════════════════════
+function buildWeaponModel(){
+  weaponGroup=new THREE.Group();
+  const dark=new THREE.MeshLambertMaterial({color:0x2a2a35});
+  const blk=new THREE.MeshLambertMaterial({color:0x111118});
+  const mid=new THREE.MeshLambertMaterial({color:0x3d3d4a});
+  const acc=new THREE.MeshLambertMaterial({color:0x555560});
+
+  const h=currentHero;
+  if(h.id==='soldier'||h.id==='genji'){
+    // Rifle / blade hybrid
+    const body=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.11,0.62),dark);
+    weaponGroup.add(body);
+    const barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.019,0.019,0.36,8),blk);
+    barrel.rotation.x=-Math.PI/2; barrel.position.set(0,0.03,-0.48);
+    weaponGroup.add(barrel);
+    const stock=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.1,0.24),mid);
+    stock.position.set(0,-0.01,0.24); weaponGroup.add(stock);
+    const mag=new THREE.Mesh(new THREE.BoxGeometry(0.042,0.15,0.065),blk);
+    mag.position.set(0,-0.11,-0.04); weaponGroup.add(mag);
+    const sight=new THREE.Mesh(new THREE.BoxGeometry(0.022,0.04,0.065),blk);
+    sight.position.set(0,0.075,-0.12); weaponGroup.add(sight);
+    const grip=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.11,0.07),mid);
+    grip.position.set(0,-0.1,0.02); weaponGroup.add(grip);
+  } else if(h.id==='tank'){
+    const handle=new THREE.Mesh(new THREE.BoxGeometry(0.11,0.11,0.72),dark);
+    weaponGroup.add(handle);
+    const head=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.2,0.07),mid);
+    head.position.set(0,0.04,-0.4); weaponGroup.add(head);
+    const edge=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.04,0.04),blk);
+    edge.position.set(0,0.08,-0.43); weaponGroup.add(edge);
+    const guard=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.07,0.05),acc);
+    guard.position.set(0,0,0.15); weaponGroup.add(guard);
+  } else if(h.id==='mercy'){
+    const body=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.1,0.5),new THREE.MeshLambertMaterial({color:0xccaa00}));
+    weaponGroup.add(body);
+    const barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.28,8),blk);
+    barrel.rotation.x=-Math.PI/2; barrel.position.set(0,0.025,-0.38); weaponGroup.add(barrel);
+    const wing=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.04,0.12),new THREE.MeshLambertMaterial({color:0xffdd44}));
+    wing.position.set(0,0.06,-0.05); weaponGroup.add(wing);
+  } else if(h.id==='reaper'){
+    // Dual shotgun look
+    const body=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.13,0.6),blk);
+    weaponGroup.add(body);
+    const b1=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.32,8),dark);
+    b1.rotation.x=-Math.PI/2; b1.position.set(0.04,0.03,-0.44); weaponGroup.add(b1);
+    const b2=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.32,8),dark);
+    b2.rotation.x=-Math.PI/2; b2.position.set(-0.04,0.03,-0.44); weaponGroup.add(b2);
+    const grip=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.14,0.07),mid);
+    grip.position.set(0,-0.1,0.05); weaponGroup.add(grip);
+  }
+
+  weaponGroup.position.set(0.22,-0.25,-0.5);
+  camera.add(weaponGroup);
+  scene.add(camera);
+}
+
+// ══════════════════════════════════════════════
+// PLAYER
+// ══════════════════════════════════════════════
+function initPlayer(){
+  player={
+    hp:currentHero.health, maxHp:currentHero.health,
+    speed:currentHero.speed,
+    yaw:0, pitch:0,
+  };
+  camera.position.set(0,1.7,5);
+  currentClip=currentHero.clipSize;
+  skillCooldowns={};
+  currentHero.skills.forEach(s=>{skillCooldowns[s.key]=0;});
+  updateHUD();
+}
+
+function buildSkillsHUD(){
+  const area=document.getElementById('skillsArea');
+  area.innerHTML='';
+  currentHero.skills.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='skillIcon'; d.id='skill_'+s.key;
+    d.innerHTML=`<span class="skillKey">${s.key}</span><span class="skillName">${s.name}</span><div class="skillCooldown hidden" id="scd_${s.key}"></div>`;
+    area.appendChild(d);
+  });
+  document.getElementById('ultLabel').textContent=currentHero.ultimate.name;
+}
+
+// ══════════════════════════════════════════════
+// ENEMY HUMANOID
+// ══════════════════════════════════════════════
+function createEnemy(typeIdx){
+  const type=ENEMY_TYPES[typeIdx];
+  const g=new THREE.Group();
+  const col=new THREE.Color(type.color);
+  const mat=new THREE.MeshLambertMaterial({color:type.color});
+  const dkMat=new THREE.MeshLambertMaterial({color:new THREE.Color().setRGB(col.r*0.55,col.g*0.55,col.b*0.55)});
+
+  // Torso
+  const torso=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.82,0.36),mat);
+  torso.position.y=1.02; torso.castShadow=true; g.add(torso);
+  // Head
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.27,10,8),mat);
+  head.position.y=1.72; head.castShadow=true; g.add(head);
+  // Eyes
+  const eyeM=new THREE.MeshBasicMaterial({color:0xffffff});
+  [-0.1,0.1].forEach(ex=>{
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.055,5,4),eyeM);
+    eye.position.set(ex,1.76,-0.24); g.add(eye);
+  });
+  // Arms
+  const lA=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.58,6),dkMat);
+  lA.rotation.z=0.4; lA.position.set(-0.45,1.05,0); g.add(lA);
+  const rA=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.58,6),dkMat);
+  rA.rotation.z=-0.4; rA.position.set(0.45,1.05,0); g.add(rA);
+  // Legs
+  const lL=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.68,6),dkMat);
+  lL.position.set(-0.18,0.34,0); g.add(lL);
+  const rL=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.68,6),dkMat);
+  rL.position.set(0.18,0.34,0); g.add(rL);
+
+  // HP bar
+  const hpCv=document.createElement('canvas'); hpCv.width=128; hpCv.height=30;
+  const hpTex=new THREE.CanvasTexture(hpCv);
+  const hpBar=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.5,0.35),
+    new THREE.MeshBasicMaterial({map:hpTex,transparent:true,depthTest:false,side:THREE.DoubleSide})
+  );
+  hpBar.position.y=2.35; hpBar.renderOrder=999; g.add(hpBar);
+
+  g.userData={
+    type:typeIdx,typeName:type.name,
+    hp:type.hp,maxHp:type.hp,
+    speed:type.speed,dmg:type.dmg,fireRate:type.fireRate,range:type.range,
+    score:type.score,healer:!!type.healer,
+    state:'patrol',lastFire:0,
+    patrolTarget:new THREE.Vector3((Math.random()-0.5)*30,0,(Math.random()-0.5)*30),
+    patrolTimer:2+Math.random()*3,
+    coverTarget:null,coverTimer:0,
+    staggerTimer:0,deathTimer:-1,alive:true,
+    walkPhase:Math.random()*Math.PI*2,
+    hpBar,hpTex,hpCanvas:hpCv,hpCtx:hpCv.getContext('2d'),
+    lArm:lA,rArm:rA,lLeg:lL,rLeg:rL
+  };
+  return g;
+}
+
+function drawHPBar(enemy){
+  const ud=enemy.userData;
+  const ctx=ud.hpCtx; const cv=ud.hpCanvas;
+  ctx.clearRect(0,0,128,30);
+  ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,128,30);
+  const pct=Math.max(0,ud.hp/ud.maxHp);
+  ctx.fillStyle='#441100'; ctx.fillRect(2,16,124,11);
+  const r=Math.floor((1-pct)*240),gg=Math.floor(pct*180);
+  ctx.fillStyle=`rgb(${r},${gg},30)`; ctx.fillRect(2,16,Math.floor(124*pct),11);
+  ctx.fillStyle='#fff'; ctx.font='bold 10px Arial';
+  ctx.fillText(ud.typeName,3,13);
+  ctx.font='9px Arial';
+  ctx.fillText(`${Math.ceil(ud.hp)}`,100,13);
+  ud.hpTex.needsUpdate=true;
+}
+
+// ══════════════════════════════════════════════
+// WAVES
+// ══════════════════════════════════════════════
+const WAVE_CFG=[[0],[0,1],[0,1,2],[1,2,3],[1,2,3,4],[0,1,2,3,4]];
+const WAVE_CNT=[5,6,7,8,9,12];
+
+function spawnWave(w){
+  waveNum=w; waveActive=true;
+  enemies.forEach(e=>{if(e.userData.alive!==false)scene.remove(e);});
+  enemies=[];
+  const count=WAVE_CNT[w-1];
+  const pool=WAVE_CFG[w-1];
+  for(let i=0;i<count;i++){
+    const ti=pool[Math.floor(Math.random()*pool.length)];
+    const e=createEnemy(ti);
+    const ang=(i/count)*Math.PI*2+Math.random()*0.5;
+    const dist=25+Math.random()*18;
+    e.position.set(Math.cos(ang)*dist,0,Math.sin(ang)*dist);
+    scene.add(e); enemies.push(e);
+    drawHPBar(e);
+  }
+  document.getElementById('waveText').textContent=`웨이브 ${w}/${MAX_WAVES}`;
+  showSkillMsg(`웨이브 ${w} 시작! 적 ${count}명`);
+}
+
+// ══════════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════════
+const PART_CFG={
+  explosion:{count:22,colors:[0xff6600,0xff3300,0xffaa00,0xffff00],speed:8,life:0.65,size:0.14},
+  hit:      {count:6, colors:[0xffffff,0xffff88],                   speed:4,life:0.28,size:0.07},
+  heal:     {count:9, colors:[0x00ff88,0x88ffcc,0xffffff],           speed:2,life:0.5, size:0.08},
+  muzzle:   {count:4, colors:[0xffff44,0xff9900],                    speed:3,life:0.1, size:0.06},
+  death:    {count:20,colors:[0xff2200,0xff6600,0x880000],           speed:6,life:0.8, size:0.13},
+};
+
+function spawnFX(pos,type){
+  const cfg=PART_CFG[type]||PART_CFG.hit;
+  for(let i=0;i<cfg.count;i++){
+    const color=cfg.colors[i%cfg.colors.length];
+    const m=new THREE.Mesh(
+      new THREE.SphereGeometry(cfg.size*(0.5+Math.random()*0.5),4,4),
+      new THREE.MeshBasicMaterial({color,transparent:true})
+    );
+    m.position.copy(pos);
+    scene.add(m);
+    const vel=new THREE.Vector3((Math.random()-0.5)*2,Math.random()*2-0.3,(Math.random()-0.5)*2)
+      .normalize().multiplyScalar(cfg.speed*(0.4+Math.random()*0.6));
+    particles.push({m,vel,life:cfg.life*(0.6+Math.random()*0.8),maxLife:cfg.life,grav:type==='heal'?-0.5:7});
+  }
+  if(type==='explosion'||type==='death'){
+    const pl=new THREE.PointLight(0xff5500,3.5,9);
+    pl.position.copy(pos); scene.add(pl);
+    impactLights.push({l:pl,t:0.5});
+  }
+  playHitSound(type);
+}
+
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.life-=dt;
+    if(p.life<=0){scene.remove(p.m);particles.splice(i,1);continue;}
+    p.vel.y-=p.grav*dt;
+    p.m.position.addScaledVector(p.vel,dt);
+    const t=p.life/p.maxLife;
+    p.m.material.opacity=t; p.m.scale.setScalar(t*0.7+0.3);
+  }
+  for(let i=impactLights.length-1;i>=0;i--){
+    const il=impactLights[i]; il.t-=dt;
+    il.l.intensity=Math.max(0,(il.t/0.5)*3.5);
+    if(il.t<=0){scene.remove(il.l);impactLights.splice(i,1);}
+  }
+}
+
+// ══════════════════════════════════════════════
+// BULLETS
+// ══════════════════════════════════════════════
+function fireBullet(fromPos,dir,damage,isPlayer){
+  if(isPlayer) totalShots++;
+  const geo=new THREE.CylinderGeometry(0.024,0.024,0.38,5);
+  const mat=new THREE.MeshBasicMaterial({color:isPlayer?0xffff44:0xff3333});
+  const m=new THREE.Mesh(geo,mat);
+  m.position.copy(fromPos);
+  const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+  m.quaternion.copy(q);
+  scene.add(m);
+  // Glow trail
+  const trail=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.01,0.01,0.55,4),
+    new THREE.MeshBasicMaterial({color:isPlayer?0xffffaa:0xff8888,transparent:true,opacity:0.35})
+  );
+  trail.position.y=0.3; m.add(trail);
+  bullets.push({m,vel:dir.clone().normalize().multiplyScalar(42),dmg:damage,isPlayer,life:2.8});
+}
+
+function updateBullets(dt){
+  const pp=camera.position;
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i]; b.life-=dt;
+    if(b.life<=0){scene.remove(b.m);bullets.splice(i,1);continue;}
+    b.m.position.addScaledVector(b.vel,dt);
+    if(b.isPlayer){
+      let hit=false;
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j];
+        if(!e.userData.alive) continue;
+        const ep=e.position.clone(); ep.y+=1.0;
+        if(b.m.position.distanceTo(ep)<0.92){
+          hit=true; totalHits++;
+          damageEnemy(e,b.dmg);
+          spawnFX(b.m.position.clone(),'hit');
+          break;
+        }
+      }
+      if(hit){scene.remove(b.m);bullets.splice(i,1);continue;}
+      // Deflect
+      if(deflectActive){
+        // already handled via rebound
+      }
+    } else {
+      if(b.m.position.distanceTo(pp)<0.75){
+        if(deflectActive){
+          b.isPlayer=true;
+          b.vel.negate();
+        } else {
+          takeDmg(b.dmg);
+          spawnFX(b.m.position.clone(),'hit');
+          scene.remove(b.m); bullets.splice(i,1); continue;
+        }
+      }
+    }
+    if(b.m.position.y<0.05){
+      addDecal(b.m.position.clone());
+      scene.remove(b.m); bullets.splice(i,1);
+    }
+  }
+}
+
+function addDecal(pos){
+  if(decals.length>60){scene.remove(decals[0].m);decals.shift();}
+  const d=new THREE.Mesh(
+    new THREE.CircleGeometry(0.13,6),
+    new THREE.MeshBasicMaterial({color:0x111100,transparent:true,opacity:0.65,depthWrite:false})
+  );
+  d.rotation.x=-Math.PI/2; d.position.copy(pos); d.position.y=0.012;
+  scene.add(d); decals.push({m:d});
+}
+
+// ══════════════════════════════════════════════
+// COMBAT
+// ══════════════════════════════════════════════
+function damageEnemy(e,dmg){
+  const ud=e.userData; if(!ud.alive) return;
+  ud.hp-=dmg; drawHPBar(e);
+  ud.staggerTimer=0.14;
+  ultCharge=Math.min(100,ultCharge+dmg*0.14);
+  if(ud.hp<=0) killEnemy(e);
+}
+
+function killEnemy(e){
+  const ud=e.userData; if(!ud.alive) return;
+  ud.alive=false; ud.state='dead'; ud.deathTimer=0.75;
+  score+=ud.score; totalKills++;
+  addKillFeed(`${localStorage.getItem(TimeGuard.KEY_NICK)||'플레이어'}가 ${ud.typeName} 처치!`);
+  spawnFX(e.position.clone().setY(1.2),'death');
+  if(currentHero.id==='reaper') player.hp=Math.min(player.maxHp,player.hp+30);
+  updateHUD();
+  document.getElementById('killText').textContent=`처치: ${totalKills}`;
+  document.getElementById('scoreText').textContent=`점수: ${score}`;
+}
+
+function takeDmg(dmg){
+  if(ghostActive) return;
+  let r=dmg;
+  if(shieldHP>0){const a=Math.min(shieldHP,r);shieldHP-=a;r-=a;}
+  if(r>0) player.hp=Math.max(0,player.hp-r);
+  screenShake=6;
+  const ov=document.getElementById('dmgOverlay');
+  ov.style.borderColor='rgba(255,0,0,0.55)';
+  setTimeout(()=>ov.style.borderColor='transparent',150);
+  if(player.hp<=0) gameOver();
+  updateHUD();
+}
+
+// ══════════════════════════════════════════════
+// AI STATE MACHINE
+// ══════════════════════════════════════════════
+function updateEnemies(dt,now){
+  const pp=camera.position.clone();
+  enemies.forEach(e=>{
+    const ud=e.userData;
+    if(!ud.alive){
+      if(ud.deathTimer>0){
+        ud.deathTimer-=dt;
+        e.rotation.z=(1-(ud.deathTimer/0.75))*(Math.PI/2);
+        const fade=ud.deathTimer/0.75;
+        e.traverse(c=>{if(c.material){c.material.opacity=Math.max(0,fade);c.material.transparent=true;}});
+        if(ud.deathTimer<=0){scene.remove(e);const idx=enemies.indexOf(e);if(idx>-1)enemies.splice(idx,1);}
+      }
+      return;
+    }
+    if(ud.staggerTimer>0){ud.staggerTimer-=dt;return;}
+
+    const dist=e.position.distanceTo(pp);
+    const hpPct=ud.hp/ud.maxHp;
+
+    // Medic logic
+    if(ud.healer){
+      let target=null,minH=Infinity;
+      enemies.forEach(e2=>{
+        if(e2!==e&&e2.userData.alive&&e2.userData.hp<e2.userData.maxHp){
+          const d2=e.position.distanceTo(e2.position);
+          if(d2<16&&e2.userData.hp<minH){minH=e2.userData.hp;target=e2;}
+        }
+      });
+      if(target){
+        moveToward(e,target.position,ud.speed,dt);
+        if(e.position.distanceTo(target.position)<2.8){
+          target.userData.hp=Math.min(target.userData.maxHp,target.userData.hp+45*dt);
+          drawHPBar(target);
+        }
+        animWalk(e,ud,dt); return;
+      }
+    }
+
+    // State transitions
+    if(hpPct<0.28&&ud.state!=='cover'&&ud.state!=='dead'){
+      ud.state='cover'; ud.coverTimer=3.5;
+      ud.coverTarget=e.position.clone().sub(pp).normalize().multiplyScalar(12).add(e.position);
+      ud.coverTarget.y=0;
+    } else if(dist<ud.range&&ud.state!=='cover'){
+      ud.state='attack';
+    } else if(dist<40&&ud.state!=='cover'){
+      ud.state='chase';
+    } else if(ud.state==='attack'||ud.state==='chase'){
+      ud.patrolTimer-=dt;
+      if(ud.patrolTimer<=0){
+        ud.state='patrol';
+        ud.patrolTarget.set((Math.random()-0.5)*40,0,(Math.random()-0.5)*40);
+        ud.patrolTimer=2+Math.random()*3;
+      }
+    } else if(ud.state==='patrol'){
+      ud.patrolTimer-=dt;
+      if(ud.patrolTimer<=0||e.position.distanceTo(ud.patrolTarget)<2){
+        ud.patrolTarget.set((Math.random()-0.5)*40,0,(Math.random()-0.5)*40);
+        ud.patrolTimer=2+Math.random()*3;
+      }
+    }
+
+    switch(ud.state){
+      case 'patrol':
+        moveToward(e,ud.patrolTarget,ud.speed*0.5,dt);
+        animWalk(e,ud,dt); break;
+      case 'chase':
+        moveToward(e,pp,ud.speed,dt);
+        animWalk(e,ud,dt); break;
+      case 'attack':
+        e.lookAt(pp.x,e.position.y,pp.z);
+        // Strafe
+        const s=new THREE.Vector3(pp.z-e.position.z,0,-(pp.x-e.position.x)).normalize();
+        e.position.addScaledVector(s,Math.sin(now*0.002)*ud.speed*0.25*dt);
+        if(now-ud.lastFire>ud.fireRate){
+          ud.lastFire=now;
+          const d=pp.clone().sub(e.position.clone().setY(1.5)).normalize();
+          d.x+=(Math.random()-0.5)*0.14; d.y+=(Math.random()-0.5)*0.07;
+          fireBullet(e.position.clone().setY(1.45),d.normalize(),ud.dmg,false);
+        }
+        break;
+      case 'cover':
+        ud.coverTimer-=dt;
+        if(ud.coverTimer<=0){ud.state='patrol';ud.patrolTimer=2;}
+        else if(ud.coverTarget) moveToward(e,ud.coverTarget,ud.speed*1.3,dt);
+        animWalk(e,ud,dt); break;
+    }
+
+    e.position.y=0;
+    ud.hpBar.lookAt(camera.position);
+  });
+}
+
+function animWalk(e,ud,dt){
+  ud.walkPhase+=dt*5.5;
+  if(ud.lLeg) ud.lLeg.rotation.x=Math.sin(ud.walkPhase)*0.42;
+  if(ud.rLeg) ud.rLeg.rotation.x=-Math.sin(ud.walkPhase)*0.42;
+  if(ud.lArm) ud.lArm.rotation.x=-Math.sin(ud.walkPhase)*0.3;
+  if(ud.rArm) ud.rArm.rotation.x=Math.sin(ud.walkPhase)*0.3;
+}
+
+function moveToward(obj,target,spd,dt){
+  const d=target.clone().sub(obj.position); d.y=0;
+  if(d.length()<0.12) return;
+  obj.position.addScaledVector(d.normalize(),spd*dt);
+  obj.lookAt(target.x,obj.position.y,target.z);
+}
+
+// ══════════════════════════════════════════════
+// SKILLS
+// ══════════════════════════════════════════════
+function useSkill(key){
+  const sk=currentHero.skills.find(s=>s.key===key); if(!sk) return;
+  if(skillCooldowns[key]>0) return;
+  skillCooldowns[key]=sk.cooldown>0?sk.cooldown:3;
+  const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+
+  switch(currentHero.id){
+    case 'soldier':
+      if(key==='Q'){ camera.position.addScaledVector(dir,8); showSkillMsg('전술 질풍!'); }
+      else if(key==='E'){ throwGrenade(camera.position.clone(),dir.clone()); showSkillMsg('수류탄!'); }
+      else if(key==='Shift'){ healRegen=true; healRegenTimer=5; showSkillMsg('생체장 활성화!'); }
+      break;
+    case 'tank':
+      if(key==='Q'){
+        enemies.forEach(e=>{if(e.userData.alive&&e.position.distanceTo(camera.position)<6)damageEnemy(e,120);});
+        spawnFX(camera.position.clone().addScaledVector(dir,3.5),'explosion'); showSkillMsg('화염 강타!');
+      } else if(key==='E'){
+        enemies.forEach(e=>{if(e.userData.alive&&e.position.distanceTo(camera.position)<9){damageEnemy(e,90);e.userData.staggerTimer=1.8;}});
+        screenShake=10; spawnFX(camera.position.clone(),'explosion'); showSkillMsg('대격변!');
+      } else if(key==='Shift'){ shieldHP=500; shieldTimer=10; showSkillMsg('방어막 활성화!'); }
+      break;
+    case 'mercy':
+      if(key==='Q'){ player.hp=Math.min(player.maxHp,player.hp+80); spawnFX(camera.position.clone(),'heal'); showSkillMsg('치유 광선!'); }
+      else if(key==='E'){ player.hp=player.maxHp; spawnFX(camera.position.clone(),'heal'); showSkillMsg('부활!'); }
+      else if(key==='Shift'){ camera.position.addScaledVector(dir,10); showSkillMsg('수호천사!'); }
+      break;
+    case 'genji':
+      if(key==='Q'){
+        for(let a=-15;a<=15;a+=15){
+          const d2=dir.clone().applyAxisAngle(new THREE.Vector3(0,1,0),a*Math.PI/180);
+          fireBullet(camera.position.clone().setY(1.5),d2,40,true);
+        }
+        showSkillMsg('수리검!');
+      } else if(key==='E'){ deflectActive=true; deflectTimer=2; showSkillMsg('편향 활성!'); }
+      else if(key==='Shift'){
+        camera.position.addScaledVector(dir,7);
+        enemies.forEach(e=>{if(e.userData.alive&&e.position.distanceTo(camera.position)<2.8)damageEnemy(e,60);});
+        showSkillMsg('질풍참!');
+      }
+      break;
+    case 'reaper':
+      if(key==='Q'){
+        const t=camera.position.clone().addScaledVector(dir,14); t.y=1.7;
+        spawnFX(camera.position.clone(),'hit'); camera.position.copy(t); spawnFX(t.clone(),'hit'); showSkillMsg('텔레포트!');
+      } else if(key==='E'){ ghostActive=true; ghostTimer=3; healRegen=true; healRegenTimer=3; showSkillMsg('망령화!'); }
+      else if(key==='Shift'){ skillCooldowns[key]=0; showSkillMsg('영혼 수확(패시브)'); }
+      break;
+  }
+  updateHUD();
+}
+
+function useUltimate(){
+  if(ultCharge<100) return;
+  ultCharge=0; showSkillMsg(`★ ${currentHero.ultimate.name}! ★`);
+  switch(currentHero.id){
+    case 'soldier': ultActive=true; ultTimer=5; break;
+    case 'tank':
+      enemies.forEach(e=>{if(e.userData.alive&&e.position.distanceTo(camera.position)<22){damageEnemy(e,220);e.userData.staggerTimer=2.5;}});
+      screenShake=16; spawnFX(camera.position.clone(),'explosion'); break;
+    case 'mercy': valkyrieActive=true; valkyrieTimer=10; break;
+    case 'genji': dragonbladeActive=true; dragonbladeTimer=8; break;
+    case 'reaper':
+      for(let a=0;a<360;a+=30){
+        const d=new THREE.Vector3(Math.cos(a*Math.PI/180),0,Math.sin(a*Math.PI/180));
+        fireBullet(camera.position.clone().setY(1.5),d,65,true);
+      }
+      spawnFX(camera.position.clone(),'explosion'); break;
+  }
+  updateHUD();
+}
+
+function throwGrenade(pos,dir){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(0.13,6,5),new THREE.MeshLambertMaterial({color:0x333300}));
+  m.position.copy(pos).setY(1.6); scene.add(m);
+  const vel=dir.clone().multiplyScalar(14).setY(8);
+  const grav=new THREE.Vector3(0,-9.8,0);
+  let t=0;
+  const iv=setInterval(()=>{
+    t+=0.016; vel.addScaledVector(grav,0.016);
+    m.position.addScaledVector(vel,0.016);
+    if(t>2.5||m.position.y<0.1){
+      clearInterval(iv); scene.remove(m);
+      spawnFX(m.position.clone(),'explosion');
+      enemies.forEach(e=>{if(e.userData.alive&&e.position.distanceTo(m.position)<6)damageEnemy(e,90);});
+    }
+  },16);
+}
+
+// ══════════════════════════════════════════════
+// PLAYER UPDATE
+// ══════════════════════════════════════════════
+function updatePlayer(dt,now){
+  if(gameState!=='playing') return;
+
+  // Mouse look
+  player.yaw-=mouseDX*0.0018;
+  player.pitch-=mouseDY*0.0018;
+  player.pitch=Math.max(-Math.PI/2.1,Math.min(Math.PI/2.1,player.pitch));
+  mouseDX=0; mouseDY=0;
+  camera.rotation.order='YXZ';
+  camera.rotation.y=player.yaw;
+  camera.rotation.x=player.pitch;
+
+  // Movement
+  const spd=currentHero.speed*(valkyrieActive?1.45:1);
+  const fw=new THREE.Vector3(-Math.sin(player.yaw),0,-Math.cos(player.yaw));
+  const rt=new THREE.Vector3(Math.cos(player.yaw),0,-Math.sin(player.yaw));
+  const mv=new THREE.Vector3();
+  if(keys['KeyW']||keys['ArrowUp']) mv.addScaledVector(fw,-1);
+  if(keys['KeyS']||keys['ArrowDown']) mv.addScaledVector(fw,1);
+  if(keys['KeyA']||keys['ArrowLeft']) mv.addScaledVector(rt,-1);
+  if(keys['KeyD']||keys['ArrowRight']) mv.addScaledVector(rt,1);
+  const isMoving=mv.lengthSq()>0.001;
+  if(isMoving) mv.normalize().multiplyScalar(spd*dt);
+  camera.position.add(mv);
+  camera.position.y=1.7;
+  camera.position.x=Math.max(-95,Math.min(95,camera.position.x));
+  camera.position.z=Math.max(-95,Math.min(95,camera.position.z));
+
+  // Weapon bob
+  if(isMoving){
+    bobTime+=dt*8;
+    if(weaponGroup){ weaponGroup.position.y=-0.25+Math.sin(bobTime)*0.013; weaponGroup.position.x=0.22+Math.cos(bobTime*0.5)*0.006; }
+  } else {
+    if(weaponGroup){ weaponGroup.position.y+=(- 0.25-weaponGroup.position.y)*dt*9; weaponGroup.position.x+=(0.22-weaponGroup.position.x)*dt*9; }
+  }
+
+  // Recoil
+  if(weaponGroup){ recoilY+=(0-recoilY)*dt*14; weaponGroup.rotation.x=recoilY; }
+
+  // Screen shake
+  if(screenShake>0){ screenShake--; camera.position.x+=(Math.random()-0.5)*0.035; camera.position.y=1.7+(Math.random()-0.5)*0.025; }
+
+  // Timers
+  Object.keys(skillCooldowns).forEach(k=>{ if(skillCooldowns[k]>0) skillCooldowns[k]=Math.max(0,skillCooldowns[k]-dt); });
+  if(deflectActive){ deflectTimer-=dt; if(deflectTimer<=0) deflectActive=false; }
+  if(ghostActive){ ghostTimer-=dt; document.getElementById('ghostIndicator').style.opacity=ghostActive?'1':'0'; if(ghostTimer<=0){ghostActive=false;document.getElementById('ghostIndicator').style.opacity='0';} }
+  if(valkyrieActive){ valkyrieTimer-=dt; if(valkyrieTimer<=0) valkyrieActive=false; }
+  if(dragonbladeActive){ dragonbladeTimer-=dt;
+    enemies.forEach(e=>{if(e.userData.alive&&e.position.distanceTo(camera.position)<3.2)damageEnemy(e,220*dt);});
+    if(dragonbladeTimer<=0) dragonbladeActive=false;
+  }
+  if(shieldTimer>0){ shieldTimer-=dt; if(shieldTimer<=0) shieldHP=0; }
+  if(healRegen){ healRegenTimer-=dt; player.hp=Math.min(player.maxHp,player.hp+28*dt); if(healRegenTimer<=0) healRegen=false; }
+  if(isReloading){
+    reloadTimer-=dt;
+    document.getElementById('reloadFill').style.width=((1-reloadTimer/reloadDuration)*100)+'%';
+    if(reloadTimer<=0){ isReloading=false; currentClip=currentHero.clipSize; document.getElementById('reloadBar').style.display='none'; showSkillMsg('재장전 완료'); }
+  }
+
+  // Ult effects
+  if(ultActive){ ultTimer-=dt;
+    if(currentHero.id==='soldier'){
+      let nearest=null,minD=999;
+      enemies.forEach(e=>{ if(e.userData.alive){const d=e.position.distanceTo(camera.position);if(d<minD){minD=d;nearest=e;}} });
+      if(nearest&&now%120<16){
+        const ad=nearest.position.clone().setY(1.2).sub(camera.position).normalize();
+        fireBullet(camera.position.clone().addScaledVector(new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion),0.5),ad,currentHero.damage*1.6,true);
+      }
+    }
+    if(ultTimer<=0) ultActive=false;
+  }
+}
+
+// ══════════════════════════════════════════════
+// SHOOTING
+// ══════════════════════════════════════════════
+function tryShoot(now){
+  if(!pointerLocked||gameState!=='playing') return;
+  if(isReloading) return;
+  const elapsed=now-lastFireTime;
+  const fr=valkyrieActive?currentHero.fireRate*0.6:currentHero.fireRate;
+  if(elapsed<fr) return;
+  lastFireTime=now;
+  if(currentClip<=0){ startReload(); return; }
+  currentClip--;
+  const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  if(currentHero.id==='reaper'){
+    for(let i=0;i<7;i++){
+      const sd=dir.clone();
+      sd.x+=(Math.random()-0.5)*0.18; sd.y+=(Math.random()-0.5)*0.1; sd.z+=(Math.random()-0.5)*0.18;
+      fireBullet(camera.position.clone().addScaledVector(dir,0.55),sd.normalize(),currentHero.damage,true);
+    }
+  } else {
+    fireBullet(camera.position.clone().addScaledVector(dir,0.55),dir,currentHero.damage*(valkyrieActive?1.55:1),true);
+  }
+  recoilY+=0.065;
+  if(weaponGroup) weaponGroup.position.z+=-0.04;
+  setTimeout(()=>{ if(weaponGroup) weaponGroup.position.z+= 0.04; },60);
+  updateHUD();
+}
+
+function startReload(){
+  if(isReloading||currentClip===currentHero.clipSize) return;
+  isReloading=true; reloadTimer=reloadDuration;
+  document.getElementById('reloadBar').style.display='block';
+  document.getElementById('reloadFill').style.width='0%';
+  showSkillMsg('재장전 중...');
+}
+
+// ══════════════════════════════════════════════
+// INPUT
+// ══════════════════════════════════════════════
+function setupInput(){
+  document.addEventListener('keydown',e=>{
+    if(e.repeat) return;
+    keys[e.code]=true;
+    if(gameState!=='playing') return;
+    if(e.code==='KeyQ') useSkill('Q');
+    else if(e.code==='KeyE') useSkill('E');
+    else if(e.code==='ShiftLeft'||e.code==='ShiftRight') useSkill('Shift');
+    else if(e.code==='KeyR') startReload();
+    else if(e.code==='KeyF') useUltimate();
+    else if(e.code==='Escape') togglePause();
+  });
+  document.addEventListener('keyup',e=>{ keys[e.code]=false; });
+  document.addEventListener('mousemove',e=>{ if(pointerLocked){mouseDX+=e.movementX;mouseDY+=e.movementY;} });
+  document.addEventListener('mousedown',e=>{ if(e.button===0) mouseHeld=true; });
+  document.addEventListener('mouseup',e=>{ if(e.button===0) mouseHeld=false; });
+}
+
+function setupPointerLock(){
+  const cv=document.getElementById('c');
+  cv.addEventListener('click',()=>{
+    if(gameState==='playing') cv.requestPointerLock();
+    else if(gameState==='paused'){
+      gameState='playing';
+      document.getElementById('pauseOverlay').style.display='none';
+      cv.requestPointerLock();
+    }
+  });
+  document.addEventListener('pointerlockchange',()=>{
+    pointerLocked=document.pointerLockElement===cv;
+    document.getElementById('clickPrompt').style.display=(!pointerLocked&&(gameState==='playing'||gameState==='paused'))?'block':'none';
+    if(!pointerLocked&&gameState==='playing'){
+      gameState='paused';
+      document.getElementById('pauseOverlay').style.display='flex';
+    }
+  });
+}
+
+function togglePause(){
+  if(gameState==='playing') document.exitPointerLock();
+}
+
+// ══════════════════════════════════════════════
+// HUD
+// ══════════════════════════════════════════════
+function updateHUD(){
+  const hpP=(player.hp/player.maxHp)*100;
+  document.getElementById('hpBarInner').style.width=hpP+'%';
+  const shP=shieldHP>0?(shieldHP/maxShield)*100:0;
+  document.getElementById('shieldBarInner').style.width=shP+'%';
+  document.getElementById('hpNum').textContent=`${Math.ceil(player.hp)} / ${player.maxHp}`;
+  document.getElementById('ammo').textContent=isReloading?'재장전...':`${currentClip} / ${currentHero.clipSize}`;
+  document.getElementById('ultFill').style.width=ultCharge+'%';
+  currentHero.skills.forEach(s=>{
+    const cd=document.getElementById('scd_'+s.key); if(!cd) return;
+    const rem=skillCooldowns[s.key]||0;
+    if(rem>0.05){ cd.classList.remove('hidden'); cd.textContent=rem.toFixed(1); }
+    else cd.classList.add('hidden');
+  });
+}
+
+// ══════════════════════════════════════════════
+// KILL FEED
+// ══════════════════════════════════════════════
+function addKillFeed(text){
+  if(killFeedItems.length>=5){
+    const old=killFeedItems.shift();
+    if(old.el?.parentNode) old.el.parentNode.removeChild(old.el);
+  }
+  const el=document.createElement('div'); el.className='killEntry'; el.textContent=text;
+  document.getElementById('killFeedWrap').appendChild(el);
+  killFeedItems.push({el,t:4});
+}
+
+function updateKillFeed(dt){
+  for(let i=killFeedItems.length-1;i>=0;i--){
+    const k=killFeedItems[i]; k.t-=dt;
+    if(k.t<1) k.el.style.opacity=Math.max(0,k.t);
+    if(k.t<=0){if(k.el?.parentNode)k.el.parentNode.removeChild(k.el);killFeedItems.splice(i,1);}
+  }
+}
+
+// ══════════════════════════════════════════════
+// MINIMAP
+// ══════════════════════════════════════════════
+function updateMinimap(){
+  const mc=document.getElementById('mmCanvas');
+  const ctx=mc.getContext('2d');
+  const W=mc.width,R=W/2;
+  ctx.clearRect(0,0,W,W);
+  ctx.fillStyle='rgba(0,0,0,0.68)';
+  ctx.beginPath();ctx.arc(R,R,R,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(R,R,R-1,0,Math.PI*2);ctx.stroke();
+  const scale=W/200;
+  const px=camera.position.x,pz=camera.position.z;
+  enemies.forEach(e=>{
+    if(!e.userData.alive) return;
+    const ex=(e.position.x-px)*scale+R, ez=(e.position.z-pz)*scale+R;
+    if(ex<4||ex>W-4||ez<4||ez>W-4) return;
+    const c=new THREE.Color(ENEMY_TYPES[e.userData.type].color);
+    ctx.fillStyle=`rgb(${Math.floor(c.r*255)},${Math.floor(c.g*255)},${Math.floor(c.b*255)})`;
+    ctx.beginPath();ctx.arc(ex,ez,3.5,0,Math.PI*2);ctx.fill();
+  });
+  // Player arrow
+  ctx.fillStyle='#00aaff';
+  ctx.save(); ctx.translate(R,R); ctx.rotate(-player.yaw);
+  ctx.beginPath(); ctx.moveTo(0,-7); ctx.lineTo(-4,5); ctx.lineTo(4,5); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // Compass
+  ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='8px Arial';
+  ctx.fillText('N',R-3,10); ctx.fillText('S',R-3,W-2);
+}
+
+// ══════════════════════════════════════════════
+// SKILL MSG
+// ══════════════════════════════════════════════
+function showSkillMsg(t){
+  const el=document.getElementById('skillMsg');
+  el.textContent=t; el.style.opacity='1'; skillMsgTimer=2.2;
+}
+
+// ══════════════════════════════════════════════
+// WAVE CHECK
+// ══════════════════════════════════════════════
+function checkWave(){
+  if(!waveActive) return;
+  if(enemies.filter(e=>e.userData.alive).length===0){
+    waveActive=false;
+    if(waveNum>=MAX_WAVES) victory();
+    else { waveTimer=4; showSkillMsg(`웨이브 ${waveNum} 클리어! 다음 웨이브까지 ${waveTimer}초`); }
+  }
+}
+
+// ══════════════════════════════════════════════
+// GAME OVER / VICTORY
+// ══════════════════════════════════════════════
+function gameOver(){
+  if(gameState==='over') return;
+  gameState='over'; window.gameRunning=false; TimeGuard.stopSession();
+  document.exitPointerLock();
+  const acc=totalShots>0?Math.round(totalHits/totalShots*100):0;
+  document.getElementById('resultTitle').textContent='게임 오버';
+  document.getElementById('resultTitle').className='lose';
+  document.getElementById('resultStats').innerHTML=
+    `웨이브: ${waveNum}/${MAX_WAVES} &nbsp;|&nbsp; 처치: ${totalKills} &nbsp;|&nbsp; 점수: ${score}<br>정확도: ${acc}% &nbsp;|&nbsp; 총 발사: ${totalShots}발`;
+  document.getElementById('resultOverlay').style.display='flex';
+}
+
+function victory(){
+  if(gameState==='victory') return;
+  gameState='victory'; window.gameRunning=false; TimeGuard.stopSession();
+  document.exitPointerLock();
+  const acc=totalShots>0?Math.round(totalHits/totalShots*100):0;
+  document.getElementById('resultTitle').textContent='승리!';
+  document.getElementById('resultTitle').className='win';
+  document.getElementById('resultStats').innerHTML=
+    `모든 웨이브 클리어! &nbsp;|&nbsp; 처치: ${totalKills} &nbsp;|&nbsp; 점수: ${score}<br>정확도: ${acc}% &nbsp;|&nbsp; 히어로: ${currentHero.name}`;
+  document.getElementById('resultOverlay').style.display='flex';
+}
+
+// ══════════════════════════════════════════════
+// RESIZE
+// ══════════════════════════════════════════════
+function onResize(){
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+}
+
+// ══════════════════════════════════════════════
+// AUDIO
+// ══════════════════════════════════════════════
+function initAudio(){
+  if(audioInited) return; audioInited=true;
+  try{
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const drone=audioCtx.createOscillator();
+    const dGain=audioCtx.createGain();
+    drone.type='sawtooth'; drone.frequency.value=48;
+    dGain.gain.value=0.012;
+    drone.connect(dGain); dGain.connect(audioCtx.destination); drone.start();
+    setInterval(()=>{
+      if(!window.gameRunning||gameState!=='playing'||!audioCtx) return;
+      if(Math.random()<0.25){
+        const o=audioCtx.createOscillator();
+        const g=audioCtx.createGain();
+        o.type='square'; o.frequency.value=70+Math.random()*50;
+        g.gain.setValueAtTime(0,audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0.018,audioCtx.currentTime+0.05);
+        g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.5);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime+0.5);
+      }
+    },2500);
+  }catch(e){}
+}
+
+function playHitSound(type){
+  if(!audioCtx) return;
+  try{
+    const o=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    o.type=type==='explosion'?'sawtooth':'sine';
+    o.frequency.value=type==='explosion'?80:type==='heal'?440:600;
+    g.gain.setValueAtTime(0.04,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+(type==='explosion'?0.4:0.08));
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime+0.4);
+  }catch(e){}
+}
+
+document.addEventListener('click',initAudio,{once:false});
+window.addEventListener('beforeunload',()=>{ if(window.gameRunning) TimeGuard.stopSession(); });
+
+// ══════════════════════════════════════════════
+// MAIN LOOP
+// ══════════════════════════════════════════════
+function gameLoop(){
+  requestAnimationFrame(gameLoop);
+  if(!window.gameRunning) return;
+  const dt=Math.min(clock.getDelta(),0.05);
+  const now=performance.now();
+
+  if(gameState==='playing'){
+    if(mouseHeld) tryShoot(now);
+    updatePlayer(dt,now);
+    updateEnemies(dt,now);
+    updateBullets(dt);
+    updateParticles(dt);
+    updateKillFeed(dt);
+    updateMinimap();
+    updateHUD();
+    checkWave();
+
+    // Skill msg fade
+    if(skillMsgTimer>0){
+      skillMsgTimer-=dt;
+      if(skillMsgTimer<0.6) document.getElementById('skillMsg').style.opacity=Math.max(0,skillMsgTimer/0.6);
+    }
+    // Wave delay
+    if(!waveActive&&waveTimer>0){
+      waveTimer-=dt;
+      if(waveTimer<=0) spawnWave(waveNum+1);
+    }
+  }
+  renderer.render(scene,camera);
+}
+</script>
+</body>
+</html>
