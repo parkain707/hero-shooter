@@ -649,46 +649,277 @@ function buildSkillsHUD(){
 }
 
 // ══════════════════════════════════════════════
-// ENEMY HUMANOID
+// ENEMY HUMANOID – Overwatch-style villain models
 // ══════════════════════════════════════════════
+
+// 적 타입별 디자인 프로파일
+const ENEMY_DESIGN=[
+  // 0: 스카우트 – 날렵한 정찰병, 가벼운 장갑, 고글
+  { bodyScale:[1,1,1], helmet:'visor', armor:'light', shoulders:false, backpack:false,
+    skinColor:0xddbb99, armorTint:0xcc3322, accentColor:0xff6644, glowColor:0xff2200,
+    weaponType:'smg', hasKneePads:true, hasBelt:true },
+  // 1: 솔저 – 중무장 보병, 방탄조끼, 헬멧
+  { bodyScale:[1.1,1,1.1], helmet:'full', armor:'medium', shoulders:true, backpack:true,
+    skinColor:0xccaa88, armorTint:0xdd6600, accentColor:0xff8800, glowColor:0xff5500,
+    weaponType:'rifle', hasKneePads:true, hasBelt:true },
+  // 2: 헤비 – 대형 중장갑, 두꺼운 장갑판
+  { bodyScale:[1.5,1.15,1.4], helmet:'heavy', armor:'heavy', shoulders:true, backpack:false,
+    skinColor:0xbb9977, armorTint:0x881111, accentColor:0xcc2222, glowColor:0xff0000,
+    weaponType:'minigun', hasKneePads:true, hasBelt:true },
+  // 3: 스나이퍼 – 날씬, 후드+망토, 스코프 바이저
+  { bodyScale:[0.85,1.05,0.85], helmet:'hood', armor:'light', shoulders:false, backpack:false,
+    skinColor:0xccbbaa, armorTint:0x6622cc, accentColor:0x9944ff, glowColor:0xaa44ff,
+    weaponType:'sniper', hasKneePads:false, hasBelt:true },
+  // 4: 메딕 – 의료진, 십자 마크, 힐링 장치
+  { bodyScale:[1,1,1], helmet:'medic', armor:'medium', shoulders:false, backpack:true,
+    skinColor:0xddccbb, armorTint:0x118844, accentColor:0x22cc66, glowColor:0x00ff66,
+    weaponType:'pistol', hasKneePads:false, hasBelt:true }
+];
+
 function createEnemy(typeIdx){
   const type=ENEMY_TYPES[typeIdx];
+  const design=ENEMY_DESIGN[typeIdx];
   const g=new THREE.Group();
+  const bodyGrp=new THREE.Group(); g.add(bodyGrp);
+
   const col=new THREE.Color(type.color);
-  const mat=new THREE.MeshLambertMaterial({color:type.color});
-  const dkMat=new THREE.MeshLambertMaterial({color:new THREE.Color().setRGB(col.r*0.55,col.g*0.55,col.b*0.55)});
+  const armorMat=new THREE.MeshPhongMaterial({color:design.armorTint,shininess:60,specular:0x333333});
+  const armorDkMat=new THREE.MeshPhongMaterial({color:new THREE.Color(design.armorTint).multiplyScalar(0.5),shininess:40});
+  const skinMat=new THREE.MeshPhongMaterial({color:design.skinColor,shininess:20});
+  const accentMat=new THREE.MeshPhongMaterial({color:design.accentColor,shininess:80,specular:0x555555});
+  const glowMat=new THREE.MeshBasicMaterial({color:design.glowColor});
+  const blackMat=new THREE.MeshPhongMaterial({color:0x111111,shininess:90,specular:0x666666});
+  const metalMat=new THREE.MeshPhongMaterial({color:0x888899,shininess:100,specular:0xaaaaaa,metalness:0.8});
 
-  // Torso
-  const torso=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.82,0.36),mat);
-  torso.position.y=1.02; torso.castShadow=true; g.add(torso);
-  // Head
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.27,10,8),mat);
-  head.position.y=1.72; head.castShadow=true; g.add(head);
-  // Eyes
-  const eyeM=new THREE.MeshBasicMaterial({color:0xffffff});
-  [-0.1,0.1].forEach(ex=>{
-    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.055,5,4),eyeM);
-    eye.position.set(ex,1.76,-0.24); g.add(eye);
-  });
-  // Arms
-  const lA=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.58,6),dkMat);
-  lA.rotation.z=0.4; lA.position.set(-0.45,1.05,0); g.add(lA);
-  const rA=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.58,6),dkMat);
-  rA.rotation.z=-0.4; rA.position.set(0.45,1.05,0); g.add(rA);
-  // Legs
-  const lL=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.68,6),dkMat);
-  lL.position.set(-0.18,0.34,0); g.add(lL);
-  const rL=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.68,6),dkMat);
-  rL.position.set(0.18,0.34,0); g.add(rL);
+  const sx=design.bodyScale[0], sy=design.bodyScale[1], sz=design.bodyScale[2];
 
-  // HP bar
-  const hpCv=document.createElement('canvas'); hpCv.width=128; hpCv.height=30;
+  // ── LEGS (booted) ──
+  const bootMat=new THREE.MeshPhongMaterial({color:0x222222,shininess:30});
+  const legMat=new THREE.MeshPhongMaterial({color:0x333340,shininess:20});
+  const lL=new THREE.Group();
+  const lThigh=new THREE.Mesh(new THREE.CylinderGeometry(0.09*sx,0.1*sx,0.38,8),legMat);
+  lThigh.position.y=0.19; lL.add(lThigh);
+  const lShin=new THREE.Mesh(new THREE.CylinderGeometry(0.08*sx,0.09*sx,0.32,8),legMat);
+  lShin.position.y=-0.16; lL.add(lShin);
+  const lBoot=new THREE.Mesh(new THREE.BoxGeometry(0.14*sx,0.12,0.22*sz),bootMat);
+  lBoot.position.set(0,-0.36,-0.02); lL.add(lBoot);
+  if(design.hasKneePads){
+    const kp=new THREE.Mesh(new THREE.SphereGeometry(0.055*sx,6,4),armorMat);
+    kp.scale.z=0.5; kp.position.set(0,0,-0.1*sz); lL.add(kp);
+  }
+  lL.position.set(-0.16*sx,0.52,0); bodyGrp.add(lL);
+
+  const rL=lL.clone(true);
+  rL.position.set(0.16*sx,0.52,0); bodyGrp.add(rL);
+
+  // ── TORSO (layered armor) ──
+  // Inner body
+  const innerBody=new THREE.Mesh(new THREE.BoxGeometry(0.52*sx,0.7*sy,0.3*sz),armorDkMat);
+  innerBody.position.y=1.1; innerBody.castShadow=true; bodyGrp.add(innerBody);
+  // Chest plate
+  const chestPlate=new THREE.Mesh(new THREE.BoxGeometry(0.56*sx,0.5*sy,0.14*sz),armorMat);
+  chestPlate.position.set(0,1.15,-0.15*sz); chestPlate.castShadow=true; bodyGrp.add(chestPlate);
+  // Back plate
+  const backPlate=new THREE.Mesh(new THREE.BoxGeometry(0.48*sx,0.45*sy,0.08*sz),armorDkMat);
+  backPlate.position.set(0,1.12,0.17*sz); bodyGrp.add(backPlate);
+  // Waist/belt
+  if(design.hasBelt){
+    const belt=new THREE.Mesh(new THREE.BoxGeometry(0.58*sx,0.08,0.34*sz),blackMat);
+    belt.position.y=0.78; bodyGrp.add(belt);
+    const buckle=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.06,0.04),accentMat);
+    buckle.position.set(0,0.78,-0.18*sz); bodyGrp.add(buckle);
+  }
+  // Collar/neck guard
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.14*sx,0.18*sx,0.1,8),armorMat);
+  collar.position.y=1.48; bodyGrp.add(collar);
+
+  // ── SHOULDER ARMOR ──
+  if(design.shoulders){
+    [-1,1].forEach(side=>{
+      const shG=new THREE.Group();
+      const sh=new THREE.Mesh(new THREE.SphereGeometry(0.14*sx,8,6),armorMat);
+      sh.scale.set(1.2,0.7,1); shG.add(sh);
+      const shPlate=new THREE.Mesh(new THREE.BoxGeometry(0.18*sx,0.06,0.16*sz),accentMat);
+      shPlate.position.y=0.06; shG.add(shPlate);
+      shG.position.set(side*0.38*sx,1.32,0); bodyGrp.add(shG);
+    });
+  }
+
+  // ── ARMS (upper arm + forearm + hand) ──
+  const lA=new THREE.Group();
+  const lUpper=new THREE.Mesh(new THREE.CylinderGeometry(0.07*sx,0.08*sx,0.32,8),armorDkMat);
+  lUpper.position.y=-0.16; lA.add(lUpper);
+  const lElbow=new THREE.Mesh(new THREE.SphereGeometry(0.06*sx,6,5),metalMat);
+  lElbow.position.y=-0.32; lA.add(lElbow);
+  const lForearm=new THREE.Mesh(new THREE.CylinderGeometry(0.06*sx,0.07*sx,0.28,8),armorMat);
+  lForearm.position.y=-0.48; lA.add(lForearm);
+  const lHand=new THREE.Mesh(new THREE.SphereGeometry(0.05*sx,5,4),skinMat);
+  lHand.position.y=-0.64; lA.add(lHand);
+  // Forearm guard
+  const lGuard=new THREE.Mesh(new THREE.BoxGeometry(0.09*sx,0.14,0.06*sz),accentMat);
+  lGuard.position.set(0,-0.45,-0.06*sz); lA.add(lGuard);
+  lA.position.set(-0.34*sx,1.35,0); bodyGrp.add(lA);
+
+  const rA=new THREE.Group();
+  const rUpper=new THREE.Mesh(new THREE.CylinderGeometry(0.07*sx,0.08*sx,0.32,8),armorDkMat);
+  rUpper.position.y=-0.16; rA.add(rUpper);
+  const rElbow=new THREE.Mesh(new THREE.SphereGeometry(0.06*sx,6,5),metalMat);
+  rElbow.position.y=-0.32; rA.add(rElbow);
+  const rForearm=new THREE.Mesh(new THREE.CylinderGeometry(0.06*sx,0.07*sx,0.28,8),armorMat);
+  rForearm.position.y=-0.48; rA.add(rForearm);
+  const rHand=new THREE.Mesh(new THREE.SphereGeometry(0.05*sx,5,4),skinMat);
+  rHand.position.y=-0.64; rA.add(rHand);
+  const rGuard=new THREE.Mesh(new THREE.BoxGeometry(0.09*sx,0.14,0.06*sz),accentMat);
+  rGuard.position.set(0,-0.45,-0.06*sz); rA.add(rGuard);
+  rA.position.set(0.34*sx,1.35,0); bodyGrp.add(rA);
+
+  // ── WEAPON (held in right hand) ──
+  function addWpnPart(geo,mat,x,y,z){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); wpnGrp.add(m); return m; }
+  const wpnGrp=new THREE.Group();
+  if(design.weaponType==='smg'){
+    addWpnPart(new THREE.BoxGeometry(0.04,0.05,0.28),blackMat,0,0,-0.14);
+    addWpnPart(new THREE.CylinderGeometry(0.012,0.012,0.12,6),metalMat,0,0.02,-0.3);
+    wpnGrp.rotation.x=-Math.PI/2;
+  } else if(design.weaponType==='rifle'){
+    addWpnPart(new THREE.BoxGeometry(0.05,0.06,0.42),blackMat,0,0,-0.21);
+    addWpnPart(new THREE.CylinderGeometry(0.015,0.015,0.18,6),metalMat,0,0.02,-0.44);
+    addWpnPart(new THREE.BoxGeometry(0.03,0.1,0.04),blackMat,0,-0.07,-0.1);
+    wpnGrp.rotation.x=-Math.PI/2;
+  } else if(design.weaponType==='minigun'){
+    const barrelG=new THREE.Group();
+    for(let i=0;i<4;i++){
+      const b=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.4,6),metalMat);
+      b.position.set(Math.cos(i*Math.PI/2)*0.035,0,Math.sin(i*Math.PI/2)*0.035);
+      barrelG.add(b);
+    }
+    barrelG.rotation.x=Math.PI/2; barrelG.position.z=-0.35;
+    wpnGrp.add(barrelG);
+    addWpnPart(new THREE.BoxGeometry(0.1,0.08,0.22),blackMat,0,0,-0.1);
+    wpnGrp.rotation.x=-Math.PI/2;
+  } else if(design.weaponType==='sniper'){
+    addWpnPart(new THREE.BoxGeometry(0.04,0.05,0.55),blackMat,0,0,-0.28);
+    addWpnPart(new THREE.CylinderGeometry(0.018,0.018,0.2,6),metalMat,0,0.02,-0.58);
+    const scope=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.08,6),blackMat);
+    scope.rotation.z=Math.PI/2; scope.position.set(0,0.05,-0.2); wpnGrp.add(scope);
+    wpnGrp.rotation.x=-Math.PI/2;
+  } else {
+    addWpnPart(new THREE.BoxGeometry(0.035,0.045,0.2),blackMat,0,0,-0.1);
+    wpnGrp.rotation.x=-Math.PI/2;
+  }
+  wpnGrp.position.set(0,-0.58,-0.12); rA.add(wpnGrp);
+
+  // ── HEAD (helmet/visor variations) ──
+  const headGrp=new THREE.Group();
+  // Base head
+  const headMesh=new THREE.Mesh(new THREE.SphereGeometry(0.22,12,10),skinMat);
+  headGrp.add(headMesh);
+  // Chin
+  const chin=new THREE.Mesh(new THREE.SphereGeometry(0.08,6,5),skinMat);
+  chin.position.set(0,-0.16,-0.12); chin.scale.set(1.2,0.6,0.8); headGrp.add(chin);
+
+  if(design.helmet==='visor'){
+    // Scout: tactical visor + ear comm
+    const visor=new THREE.Mesh(new THREE.BoxGeometry(0.36,0.08,0.08),new THREE.MeshPhongMaterial({color:design.glowColor,shininess:120,specular:0xffffff,transparent:true,opacity:0.8}));
+    visor.position.set(0,0.04,-0.2); headGrp.add(visor);
+    const comm=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.06,6),metalMat);
+    comm.rotation.z=Math.PI/2; comm.position.set(-0.22,0,0); headGrp.add(comm);
+    // Hair mohawk
+    const hair=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.12,0.2),new THREE.MeshPhongMaterial({color:0x442200}));
+    hair.position.set(0,0.2,0.02); headGrp.add(hair);
+  } else if(design.helmet==='full'){
+    // Soldier: full helmet
+    const helmet=new THREE.Mesh(new THREE.SphereGeometry(0.25,10,8),armorMat);
+    helmet.scale.set(1,0.9,1.05); helmet.position.y=0.04; headGrp.add(helmet);
+    const faceplate=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.1,0.06),new THREE.MeshPhongMaterial({color:0x222222,shininess:100,transparent:true,opacity:0.7}));
+    faceplate.position.set(0,0.02,-0.22); headGrp.add(faceplate);
+    // Eye slit glow
+    const eyeSlit=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.03,0.02),glowMat);
+    eyeSlit.position.set(0,0.04,-0.24); headGrp.add(eyeSlit);
+  } else if(design.helmet==='heavy'){
+    // Heavy: massive helmet with face guard
+    const helmet=new THREE.Mesh(new THREE.SphereGeometry(0.28,10,8),armorMat);
+    helmet.scale.set(1.1,0.95,1.1); helmet.position.y=0.05; headGrp.add(helmet);
+    // Face cage
+    [-0.08,0,0.08].forEach(ox=>{
+      const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.14,4),metalMat);
+      bar.position.set(ox,-0.02,-0.26); headGrp.add(bar);
+    });
+    const eyeGlow=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.04,0.02),glowMat);
+    eyeGlow.position.set(0,0.06,-0.27); headGrp.add(eyeGlow);
+  } else if(design.helmet==='hood'){
+    // Sniper: hood + single glowing eye
+    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.26,10,8),new THREE.MeshPhongMaterial({color:0x221133,shininess:10}));
+    hood.scale.set(1,1.05,1.15); hood.position.set(0,0.06,0.04); headGrp.add(hood);
+    // Cape drape
+    const drape=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.35,0.06),new THREE.MeshPhongMaterial({color:0x1a0a2e,shininess:5}));
+    drape.position.set(0,-0.22,0.12); headGrp.add(drape);
+    // Single scope eye
+    const scopeEye=new THREE.Mesh(new THREE.SphereGeometry(0.04,8,6),glowMat);
+    scopeEye.position.set(0.06,0.04,-0.2); headGrp.add(scopeEye);
+    const scopeRing=new THREE.Mesh(new THREE.TorusGeometry(0.045,0.008,6,12),metalMat);
+    scopeRing.position.set(0.06,0.04,-0.2); headGrp.add(scopeRing);
+  } else if(design.helmet==='medic'){
+    // Medic: medical cap + cross
+    const cap=new THREE.Mesh(new THREE.SphereGeometry(0.24,10,8),new THREE.MeshPhongMaterial({color:0xeeeeee,shininess:40}));
+    cap.scale.set(1,0.85,1); cap.position.y=0.06; headGrp.add(cap);
+    // Red cross
+    const crossH=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.03,0.02),new THREE.MeshBasicMaterial({color:0xff0000}));
+    crossH.position.set(0,0.12,-0.22); headGrp.add(crossH);
+    const crossV=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.1,0.02),new THREE.MeshBasicMaterial({color:0xff0000}));
+    crossV.position.set(0,0.12,-0.22); headGrp.add(crossV);
+    // Visor
+    const mVisor=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.06,0.05),new THREE.MeshPhongMaterial({color:0x88ffaa,transparent:true,opacity:0.5,shininess:100}));
+    mVisor.position.set(0,0.02,-0.2); headGrp.add(mVisor);
+  }
+
+  // Eyes (menacing glow for non-fully-helmeted)
+  if(design.helmet!=='full'&&design.helmet!=='heavy'){
+    [-0.07,0.07].forEach(ex=>{
+      const eyeOuter=new THREE.Mesh(new THREE.SphereGeometry(0.035,6,5),new THREE.MeshBasicMaterial({color:0x111111}));
+      eyeOuter.position.set(ex,0.04,-0.19); headGrp.add(eyeOuter);
+      const eyeInner=new THREE.Mesh(new THREE.SphereGeometry(0.018,6,5),glowMat);
+      eyeInner.position.set(ex,0.04,-0.21); headGrp.add(eyeInner);
+    });
+  }
+
+  headGrp.position.y=1.62; bodyGrp.add(headGrp);
+
+  // ── BACKPACK ──
+  if(design.backpack){
+    const bpG=new THREE.Group();
+    const bpBody=new THREE.Mesh(new THREE.BoxGeometry(0.3*sx,0.32*sy,0.12),armorDkMat);
+    bpG.add(bpBody);
+    if(design.helmet==='medic'){
+      // Healing tank
+      const tank=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.25,8),new THREE.MeshPhongMaterial({color:0x88ff88,transparent:true,opacity:0.6,shininess:80}));
+      tank.position.set(0.1,0,0.05); bpG.add(tank);
+      const tank2=tank.clone(); tank2.position.set(-0.1,0,0.05); bpG.add(tank2);
+    } else {
+      // Ammo pack
+      const detail=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.08,0.04),accentMat);
+      detail.position.y=0.08; bpG.add(detail);
+    }
+    bpG.position.set(0,1.1,0.22*sz); bodyGrp.add(bpG);
+  }
+
+  // ── TYPE-SPECIFIC GLOW ACCENTS ──
+  // Accent stripes on chest
+  const stripe1=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.35*sy,0.01),glowMat);
+  stripe1.position.set(-0.12,1.15,-0.22*sz); bodyGrp.add(stripe1);
+  const stripe2=stripe1.clone(); stripe2.position.x=0.12; bodyGrp.add(stripe2);
+
+  // ── HP BAR (improved) ──
+  const hpCv=document.createElement('canvas'); hpCv.width=200; hpCv.height=40;
   const hpTex=new THREE.CanvasTexture(hpCv);
   const hpBar=new THREE.Mesh(
-    new THREE.PlaneGeometry(1.5,0.35),
+    new THREE.PlaneGeometry(1.8,0.4),
     new THREE.MeshBasicMaterial({map:hpTex,transparent:true,depthTest:false,side:THREE.DoubleSide})
   );
-  hpBar.position.y=2.35; hpBar.renderOrder=999; g.add(hpBar);
+  hpBar.position.y=2.5; hpBar.renderOrder=999; g.add(hpBar);
+
+  // Store all body meshes for hit flash
+  const allMeshes=[];
+  bodyGrp.traverse(c=>{ if(c.isMesh) allMeshes.push({mesh:c,origMat:c.material}); });
 
   g.userData={
     type:typeIdx,typeName:type.name,
@@ -702,24 +933,103 @@ function createEnemy(typeIdx){
     staggerTimer:0,deathTimer:-1,alive:true,
     walkPhase:Math.random()*Math.PI*2,
     hpBar,hpTex,hpCanvas:hpCv,hpCtx:hpCv.getContext('2d'),
-    lArm:lA,rArm:rA,lLeg:lL,rLeg:rL
+    lArm:lA,rArm:rA,lLeg:lL,rLeg:rL,
+    headGrp, bodyGrp, allMeshes,
+    hitFlashTimer:0, flinchTimer:0, flinchDir:new THREE.Vector3(),
+    design
   };
   return g;
+}
+
+// ── 피격 시 백색 플래시 + 넉백 ──
+const hitFlashMat=new THREE.MeshBasicMaterial({color:0xffffff});
+
+function enemyHitReaction(e, bulletDir){
+  const ud=e.userData;
+  // 1) 전신 백색 플래시
+  ud.hitFlashTimer=0.08;
+  ud.allMeshes.forEach(entry=>{ entry.mesh.material=hitFlashMat; });
+  // 2) 머리 반동(flinch)
+  ud.flinchTimer=0.18;
+  if(bulletDir) ud.flinchDir.copy(bulletDir).normalize();
+  else ud.flinchDir.set(0,0,1);
+  // 3) 넉백
+  const kb=ud.flinchDir.clone().multiplyScalar(0.3);
+  e.position.add(kb);
+  // 4) 혈흔 파티클
+  spawnBloodFX(e.position.clone().setY(1.2), ud.flinchDir);
+}
+
+function spawnBloodFX(pos, dir){
+  const colors=[0xff2200,0xcc0000,0xff4400,0xaa0000];
+  for(let i=0;i<8;i++){
+    const m=new THREE.Mesh(
+      new THREE.SphereGeometry(0.03+Math.random()*0.04,4,3),
+      new THREE.MeshBasicMaterial({color:colors[i%4],transparent:true})
+    );
+    m.position.copy(pos);
+    scene.add(m);
+    const vel=dir.clone().multiplyScalar(2+Math.random()*4)
+      .add(new THREE.Vector3((Math.random()-0.5)*3,Math.random()*4,(Math.random()-0.5)*3));
+    particles.push({m,vel,life:0.4+Math.random()*0.3,maxLife:0.6,grav:12});
+  }
+}
+
+// ── 피격 플래시/flinch 업데이트 (updateEnemies 에서 호출) ──
+function updateHitEffects(e, dt){
+  const ud=e.userData;
+  if(ud.hitFlashTimer>0){
+    ud.hitFlashTimer-=dt;
+    if(ud.hitFlashTimer<=0){
+      ud.allMeshes.forEach(entry=>{ entry.mesh.material=entry.origMat; });
+    }
+  }
+  if(ud.flinchTimer>0){
+    ud.flinchTimer-=dt;
+    const flinchAmount=Math.sin(ud.flinchTimer*35)*0.15*(ud.flinchTimer/0.18);
+    if(ud.headGrp){
+      ud.headGrp.rotation.x=flinchAmount;
+      ud.headGrp.rotation.z=flinchAmount*0.5;
+    }
+    // 몸체 흔들림
+    if(ud.bodyGrp) ud.bodyGrp.rotation.z=flinchAmount*0.3;
+    if(ud.flinchTimer<=0){
+      if(ud.headGrp){ud.headGrp.rotation.x=0;ud.headGrp.rotation.z=0;}
+      if(ud.bodyGrp) ud.bodyGrp.rotation.z=0;
+    }
+  }
 }
 
 function drawHPBar(enemy){
   const ud=enemy.userData;
   const ctx=ud.hpCtx; const cv=ud.hpCanvas;
-  ctx.clearRect(0,0,128,30);
-  ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,128,30);
+  ctx.clearRect(0,0,200,40);
+  // Background
+  ctx.fillStyle='rgba(0,0,0,0.85)';
+  ctx.fillRect(0,0,200,40);
+  // Border
+  ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=1;
+  ctx.strokeRect(1,1,198,38);
+  // Name + type icon
+  ctx.fillStyle='#fff'; ctx.font='bold 11px Arial';
+  const icon=ud.healer?'✚':ud.type===3?'◎':ud.type===2?'▣':'◆';
+  ctx.fillText(`${icon} ${ud.typeName}`,6,15);
+  // HP number
+  ctx.font='9px Arial'; ctx.fillStyle='#aaa';
+  ctx.fillText(`${Math.ceil(ud.hp)}/${ud.maxHp}`,150,15);
+  // HP bar background
+  ctx.fillStyle='#330000'; ctx.fillRect(6,22,188,12);
+  // HP bar fill
   const pct=Math.max(0,ud.hp/ud.maxHp);
-  ctx.fillStyle='#441100'; ctx.fillRect(2,16,124,11);
-  const r=Math.floor((1-pct)*240),gg=Math.floor(pct*180);
-  ctx.fillStyle=`rgb(${r},${gg},30)`; ctx.fillRect(2,16,Math.floor(124*pct),11);
-  ctx.fillStyle='#fff'; ctx.font='bold 10px Arial';
-  ctx.fillText(ud.typeName,3,13);
-  ctx.font='9px Arial';
-  ctx.fillText(`${Math.ceil(ud.hp)}`,100,13);
+  const grad=ctx.createLinearGradient(6,0,194,0);
+  if(pct>0.5){ grad.addColorStop(0,'#00cc44'); grad.addColorStop(1,'#44ff66'); }
+  else if(pct>0.25){ grad.addColorStop(0,'#cc8800'); grad.addColorStop(1,'#ffaa00'); }
+  else { grad.addColorStop(0,'#cc0000'); grad.addColorStop(1,'#ff3300'); }
+  ctx.fillStyle=grad;
+  ctx.fillRect(6,22,Math.floor(188*pct),12);
+  // HP bar shine
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.fillRect(6,22,Math.floor(188*pct),5);
   ud.hpTex.needsUpdate=true;
 }
 
@@ -832,7 +1142,7 @@ function updateBullets(dt){
         const ep=e.position.clone(); ep.y+=1.0;
         if(b.m.position.distanceTo(ep)<0.92){
           hit=true; totalHits++;
-          damageEnemy(e,b.dmg);
+          damageEnemy(e,b.dmg,b.vel.clone().normalize());
           spawnFX(b.m.position.clone(),'hit');
           break;
         }
@@ -874,17 +1184,18 @@ function addDecal(pos){
 // ══════════════════════════════════════════════
 // COMBAT
 // ══════════════════════════════════════════════
-function damageEnemy(e,dmg){
+function damageEnemy(e,dmg,bulletDir){
   const ud=e.userData; if(!ud.alive) return;
   ud.hp-=dmg; drawHPBar(e);
-  ud.staggerTimer=0.14;
+  ud.staggerTimer=0.12;
   ultCharge=Math.min(100,ultCharge+dmg*0.14);
+  enemyHitReaction(e, bulletDir||camera.getWorldDirection(new THREE.Vector3()));
   if(ud.hp<=0) killEnemy(e);
 }
 
 function killEnemy(e){
   const ud=e.userData; if(!ud.alive) return;
-  ud.alive=false; ud.state='dead'; ud.deathTimer=0.75;
+  ud.alive=false; ud.state='dead'; ud.deathTimer=1.2;
   score+=ud.score; totalKills++;
   addKillFeed(`${localStorage.getItem(TimeGuard.KEY_NICK)||'플레이어'}가 ${ud.typeName} 처치!`);
   playKillSound();
@@ -919,13 +1230,23 @@ function updateEnemies(dt,now){
     if(!ud.alive){
       if(ud.deathTimer>0){
         ud.deathTimer-=dt;
-        e.rotation.z=(1-(ud.deathTimer/0.75))*(Math.PI/2);
-        const fade=ud.deathTimer/0.75;
-        e.traverse(c=>{if(c.material){c.material.opacity=Math.max(0,fade);c.material.transparent=true;}});
+        const t=ud.deathTimer/1.2;
+        // 뒤로 넘어지면서 회전
+        e.rotation.x=(1-t)*(-Math.PI/3);
+        e.rotation.z=(1-t)*(Math.PI/6)*Math.sin((1-t)*8);
+        e.position.y=Math.max(-0.3,(1-t)*(-0.5));
+        // 페이드아웃 + 붉은 발광
+        e.traverse(c=>{
+          if(c.material&&c.material!==hitFlashMat){
+            c.material.opacity=Math.max(0,t);
+            c.material.transparent=true;
+          }
+        });
         if(ud.deathTimer<=0){scene.remove(e);const idx=enemies.indexOf(e);if(idx>-1)enemies.splice(idx,1);}
       }
       return;
     }
+    updateHitEffects(e,dt);
     if(ud.staggerTimer>0){ud.staggerTimer-=dt;return;}
 
     const dist=e.position.distanceTo(pp);
