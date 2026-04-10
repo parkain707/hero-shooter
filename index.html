@@ -402,11 +402,7 @@ function initGame(heroId){
   try{
     const canvas=document.getElementById('c');
 
-    // WebGL 지원 확인
-    const testGL=canvas.getContext('webgl2')||canvas.getContext('webgl');
-    if(!testGL){ showFatalError('WebGL이 지원되지 않는 브라우저입니다.'); window.gameRunning=false; return; }
-
-    renderer=new THREE.WebGLRenderer({canvas,antialias:true,context:testGL});
+    renderer=new THREE.WebGLRenderer({canvas,antialias:true});
     renderer.setSize(window.innerWidth,window.innerHeight);
     renderer.setClearColor(0x87ceeb,1);
     renderer.shadowMap.enabled=true;
@@ -531,7 +527,8 @@ function buildMap(){
   covers.forEach(([w,h,d,c,x,y,z])=>buildBox(w,h,d,c,x,y,z));
 
   // Fountain
-  scene.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.8,0.5,16),new THREE.MeshLambertMaterial({color:0x9999aa})),{position:new THREE.Vector3(0,0.25,0)}));
+  const fountain=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.8,0.5,16),new THREE.MeshLambertMaterial({color:0x9999aa}));
+  fountain.position.set(0,0.25,0); scene.add(fountain);
   const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.38,2.2,8),new THREE.MeshLambertMaterial({color:0xaaaacc}));
   pillar.position.set(0,1.6,0); pillar.userData.solid=true; pillar.castShadow=true; scene.add(pillar);
 
