@@ -185,6 +185,7 @@ body { background:#000; overflow:hidden; font-family:'맑은 고딕',Arial,sans-
   <h2>오늘 플레이 시간이 끝났어요!</h2>
   <p>내일 다시 만나요 :)</p>
   <button class="overlayBtn" onclick="location.reload()">확인</button>
+  <p id="teacherHint" style="font-size:.7rem;color:#555;margin-top:8px;cursor:default" onclick="teacherReset(this)">⑤</p>
 </div>
 
 <div id="clickPrompt">클릭하여 게임 시작/재개</div>
@@ -1422,6 +1423,23 @@ function playHitSound(type){
 
 document.addEventListener('click',initAudio,{once:false});
 window.addEventListener('beforeunload',()=>{ if(window.gameRunning) TimeGuard.stopSession(); });
+
+// 선생님 초기화 (⑤ 5회 클릭)
+let _teacherClicks=0,_teacherTimer=0;
+function teacherReset(el){
+  clearTimeout(_teacherTimer);
+  _teacherClicks++;
+  el.textContent='⑤'.repeat(5-_teacherClicks+1)||'⑤';
+  if(_teacherClicks>=5){
+    localStorage.removeItem('hn_playtime');
+    localStorage.removeItem('hn_date');
+    _teacherClicks=0;
+    alert('초기화 완료! 다시 시작합니다.');
+    location.reload();
+  } else {
+    _teacherTimer=setTimeout(()=>{_teacherClicks=0;el.textContent='⑤';},2000);
+  }
+}
 
 // ══════════════════════════════════════════════
 // MAIN LOOP
