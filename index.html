@@ -397,8 +397,9 @@ function initGame(heroId){
   renderer.setSize(window.innerWidth,window.innerHeight);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.1;
+  renderer.outputEncoding=THREE.sRGBEncoding;
+  renderer.toneMapping=THREE.LinearToneMapping;
+  renderer.toneMappingExposure=1.0;
 
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x87ceeb);
@@ -409,17 +410,17 @@ function initGame(heroId){
   camera.position.set(0,1.7,5);
 
   // Lights
-  scene.add(new THREE.AmbientLight(0xffffff,0.55));
-  const sun=new THREE.DirectionalLight(0xfff8e0,1.2);
+  scene.add(new THREE.AmbientLight(0xffffff,1.2));
+  const sun=new THREE.DirectionalLight(0xfff8e0,2.0);
   sun.position.set(30,60,20);
   sun.castShadow=true;
-  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.mapSize.set(1024,1024);
   sun.shadow.camera.near=0.5; sun.shadow.camera.far=200;
   sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
   sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
   scene.add(sun);
-  scene.add(new THREE.HemisphereLight(0x87ceeb,0x556655,0.45));
-  const fill=new THREE.DirectionalLight(0x88aaff,0.28);
+  scene.add(new THREE.HemisphereLight(0x87ceeb,0x556655,0.8));
+  const fill=new THREE.DirectionalLight(0x88aaff,0.6);
   fill.position.set(-20,10,-20); scene.add(fill);
 
   buildMap();
