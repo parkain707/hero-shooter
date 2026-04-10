@@ -386,54 +386,72 @@ let audioInited=false;
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+function showFatalError(msg){
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;background:#111;color:#ff4444;z-index:9999;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center;font-family:monospace;font-size:1rem;white-space:pre-wrap;word-break:break-all;';
+  d.textContent='⚠ 오류 발생:\n\n'+msg;
+  document.body.appendChild(d);
+}
+
 function initGame(heroId){
   window.gameRunning=true;
   currentHero=HEROES.find(h=>h.id===heroId);
   document.getElementById('heroNameTag').textContent=
     `${localStorage.getItem(TimeGuard.KEY_NICK)||'플레이어'} - ${currentHero.name}`;
 
-  const canvas=document.getElementById('c');
-  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  renderer.shadowMap.enabled=true;
-  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.outputEncoding=THREE.sRGBEncoding;
-  renderer.toneMapping=THREE.LinearToneMapping;
-  renderer.toneMappingExposure=1.0;
+  try{
+    const canvas=document.getElementById('c');
 
-  scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x87ceeb);
-  scene.fog=new THREE.Fog(0x87ceeb,60,200);
-  clock=new THREE.Clock();
+    // WebGL 지원 확인
+    const testGL=canvas.getContext('webgl2')||canvas.getContext('webgl');
+    if(!testGL){ showFatalError('WebGL이 지원되지 않는 브라우저입니다.'); window.gameRunning=false; return; }
 
-  camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,300);
-  camera.position.set(0,1.7,5);
+    renderer=new THREE.WebGLRenderer({canvas,antialias:true,context:testGL});
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    renderer.setClearColor(0x87ceeb,1);
+    renderer.shadowMap.enabled=true;
+    renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
-  // Lights
-  scene.add(new THREE.AmbientLight(0xffffff,1.2));
-  const sun=new THREE.DirectionalLight(0xfff8e0,2.0);
-  sun.position.set(30,60,20);
-  sun.castShadow=true;
-  sun.shadow.mapSize.set(1024,1024);
-  sun.shadow.camera.near=0.5; sun.shadow.camera.far=200;
-  sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
-  sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
-  scene.add(sun);
-  scene.add(new THREE.HemisphereLight(0x87ceeb,0x556655,0.8));
-  const fill=new THREE.DirectionalLight(0x88aaff,0.6);
-  fill.position.set(-20,10,-20); scene.add(fill);
+    scene=new THREE.Scene();
+    scene.background=new THREE.Color(0x87ceeb);
+    scene.fog=new THREE.Fog(0x87ceeb,80,220);
+    clock=new THREE.Clock();
 
-  buildMap();
-  buildWeaponModel();
-  initPlayer();
-  buildSkillsHUD();
-  spawnWave(1);
-  setupInput();
-  setupPointerLock();
-  window.addEventListener('resize',onResize);
-  document.getElementById('clickPrompt').style.display='block';
-  requestAnimationFrame(gameLoop);
+    camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,300);
+    camera.position.set(0,1.7,5);
+
+    // 즉시 테스트 렌더 (배경색만)
+    renderer.render(scene,camera);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff,1.5));
+    const sun=new THREE.DirectionalLight(0xfff8e0,2.5);
+    sun.position.set(30,60,20);
+    sun.castShadow=true;
+    sun.shadow.mapSize.set(512,512);
+    sun.shadow.camera.near=0.5; sun.shadow.camera.far=200;
+    sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
+    sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
+    scene.add(sun);
+    scene.add(new THREE.HemisphereLight(0xaaccff,0x556655,1.0));
+    const fill=new THREE.DirectionalLight(0xffffff,0.8);
+    fill.position.set(-20,10,-20); scene.add(fill);
+
+    buildMap();
+    buildWeaponModel();
+    initPlayer();
+    buildSkillsHUD();
+    spawnWave(1);
+    setupInput();
+    setupPointerLock();
+    window.addEventListener('resize',onResize);
+    document.getElementById('clickPrompt').style.display='block';
+    requestAnimationFrame(gameLoop);
+  }catch(err){
+    showFatalError(err.message+'\n\n'+err.stack);
+    window.gameRunning=false;
+    console.error(err);
+  }
 }
 
 // ══════════════════════════════════════════════
